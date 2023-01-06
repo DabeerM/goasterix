@@ -1,6 +1,9 @@
 package transform
 
-import "errors"
+import (
+	"errors"
+	"math"
+)
 
 var (
 	// ErrCharUnknown reports which not found equivalent International Alphabet 5 char.
@@ -17,6 +20,11 @@ type SourceIdentifier struct {
 	Sic uint8 `json:"sic" xml:"sic"`
 }
 
+type TimeOfDayHighPrecision struct {
+	FSI             string  `json:"FSI"`
+	TimeOfReception float64 `json:"TimeOfReception"`
+}
+
 // sacSic returns a SourceIdentifier with:
 // Sac: an integer of System Area TransponderRegisterNumber.
 // Sic: an integer of System Identification TransponderRegisterNumber.
@@ -26,6 +34,7 @@ func sacSic(data [2]byte) (src SourceIdentifier, err error) {
 	return src, nil
 }
 
+// TODO: Check if it applies for similar functions. If so, refactor name
 // timeOfDay returns a float64 in second (1 bit = 1/128 s)
 // Absolute time stamping expressed as Co-ordinated Universal Time (UTC).
 // The time information, coded in three octets, shall reflect the exact time of an event,
@@ -35,6 +44,31 @@ func timeOfDay(data [3]byte) (tod float64, err error) {
 	tmp := uint32(data[0])<<16 + uint32(data[1])<<8 + uint32(data[2])
 	tod = float64(tmp) / 128
 	return tod, nil
+}
+
+// timeOfDay returns a float64 in second (1 bit = 1/2^30 s)
+// Absolute time stamping expressed as Co-ordinated Universal Time (UTC).
+// The time information, coded in three octets, shall reflect the exact time of an event,
+// expressed as a number of 1/2^30 s elapsed since last midnight.
+// The time of day value is reset to 0 each day at midnight.
+func timeOfDayHighPrecision(data [4]byte) (TimeOfDayHighPrecision, error) {
+	var tmp TimeOfDayHighPrecision
+
+	fsiVal := data[0] & 0xc0 >> 6
+	switch fsiVal {
+	case 3:
+		tmp.FSI = "Reserved"
+	case 2:
+		tmp.FSI = "-1"
+	case 1:
+		tmp.FSI = "+1"
+	case 0:
+		tmp.FSI = "+0"
+	}
+
+	tod := uint32(data[0]&0x3F)<<24 + uint32(data[1])<<16 + uint32(data[2])<<8 + uint32(data[3])
+	tmp.TimeOfReception = float64(tod) * math.Pow(2, -30)
+	return tmp, nil
 }
 
 // trackNumber returns an integer (Identification of a track).

@@ -16,9 +16,18 @@ type WGS84Coordinates struct {
 	Longitude float32 `json:"longitude,omitempty"`
 }
 
+type TargetAddress struct {
+	Target  byte  `json:"target,omitempty"`
+	Address int16 `json:"address,omitempty"` // TODO: Check if this is the best type?
+}
+
 type AirSpeed struct {
 	IM       string  `json:"im,omitempty"`
 	AirSpeed float64 `json:"airspeed,omitempty"`
+}
+type TrueAirSpeed struct {
+	RE    int   `json:"re,omitempty"`
+	Speed int16 `json:"speed,omitempty"`
 }
 
 // TODO: Write the potential messages/states in const
@@ -60,11 +69,11 @@ type Cat021Model struct {
 	TimeOfApplicabilityForPosition                 float64                 `json:"timeOfApplicabilityForPosition,omitempty"`
 	TimeOfApplicabilityForVelocity                 float64                 `json:"timeOfApplicabilityForVelocity,omitempty"`
 	TimeOfMessageReceptionForPosition              float64                 `json:"TimeOfMessageReceptionForPosition,omitempty"`
-	TimeOfMessageReceptionForPositionHighPrecision float64                 `json:"TimeOfMessageReceptionForPositionHighPrecision,omitempty"`
+	TimeOfMessageReceptionForPositionHighPrecision *TimeOfDayHighPrecision `json:"TimeOfMessageReceptionForPositionHighPrecision,omitempty"`
 	TimeOfMessageReceptionForVelocity              float64                 `json:"TimeOfMessageReceptionForVelocity,omitempty"`
-	TimeOfMessageReceptionForVelocityHighPrecision float64                 `json:"TimeOfMessageReceptionForVelocityHighPrecision,omitempty"`
+	TimeOfMessageReceptionForVelocityHighPrecision *TimeOfDayHighPrecision `json:"TimeOfMessageReceptionForVelocityHighPrecision,omitempty"`
 	TimeOfReportTransmission                       float64                 `json:"TimeOfReportTransmission,omitempty"`
-	TargetAddress                                  string                  `json:"TargetAddress,omitempty"`
+	TargetAddress                                  *TargetAddress          `json:"TargetAddress,omitempty"`
 	QualityIndicators                              string                  `json:"QualityIndicators,omitempty"`
 	TrajectoryIntent                               string                  `json:"TrajectoryIntent,omitempty"`
 	PositionWGS84                                  *WGS84Coordinates       `json:"PositionWGS84,omitempty"`
@@ -75,7 +84,7 @@ type Cat021Model struct {
 	SelectedAltitude                               int64                   `json:"SelectedAltitude,omitempty"`
 	FinalStateSelectedAltitude                     int64                   `json:"FinalStateSelectedAltitude,omitempty"`
 	AirSpeed                                       *AirSpeed               `json:"AirSpeed,omitempty"`
-	TrueAirSpeed                                   int64                   `json:"TrueAirSpeed,omitempty"`
+	TrueAirSpeed                                   *TrueAirSpeed           `json:"TrueAirSpeed,omitempty"`
 	MagneticHeading                                float64                 `json:"MagneticHeading,omitempty"`
 	BarometricVerticalRate                         float64                 `json:"BarometricVerticalRate,omitempty"`
 	GeometricVerticalRate                          float64                 `json:"GeometricVerticalRate,omitempty"`
@@ -137,17 +146,37 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			tmp := getAirSpeed(payload)
 			data.AirSpeed = &tmp
 		case 10:
-			// Do stuff
+			var payload [2]byte
+			copy(payload[:], item.Fixed.Data[:])
+			tmp := getTrueAirSpeed(payload)
+			data.TrueAirSpeed = &tmp
 		case 11:
-			// Do stuff
+			var tmp TargetAddress
+			tmp.Target = item.Fixed.Data[0]
+			tmp.Address = int16(item.Fixed.Data[1]) + int16(item.Fixed.Data[2])
+			data.TargetAddress = &tmp
 		case 12:
-			// Do stuff
+			// TODO: Check correctness
+			var payload [3]byte
+			copy(payload[:], item.Fixed.Data[:])
+			data.TimeOfMessageReceptionForPosition, _ = timeOfDay(payload)
 		case 13:
-			// Do stuff
+			// TODO: Check correctness
+			var payload [4]byte
+			copy(payload[:], item.Fixed.Data[:])
+			tmp, _ := timeOfDayHighPrecision(payload)
+			data.TimeOfMessageReceptionForPositionHighPrecision = &tmp
 		case 14:
-			// Do stuff
+			// TODO: Check correctness
+			var payload [3]byte
+			copy(payload[:], item.Fixed.Data[:])
+			data.TimeOfMessageReceptionForVelocity, _ = timeOfDay(payload)
 		case 15:
-			// Do stuff
+			// TODO: Check correctness
+			var payload [4]byte
+			copy(payload[:], item.Fixed.Data[:])
+			tmp, _ := timeOfDayHighPrecision(payload)
+			data.TimeOfMessageReceptionForVelocityHighPrecision = &tmp
 		case 16:
 			// Do stuff
 		case 17:
@@ -388,13 +417,22 @@ func getAirSpeed(data [2]byte) AirSpeed {
 	var speed AirSpeed
 
 	tmp := data[0]
+	speedValue := float64(uint32(data[0]&0x7F)<<8 + uint32(data[1]&0xFF))
 	if tmp&0x80 == 0 {
 		speed.IM = "IAS"
-		speed.AirSpeed = float64(uint32(data[0]&0x7F)<<8+uint32(data[1]&0xFF)) * math.Pow(2, -14)
+		speed.AirSpeed = speedValue * math.Pow(2, -14)
 
 	} else {
 		speed.IM = "Mach"
+		speed.AirSpeed = speedValue * 0.001
 	}
 
 	return speed
+}
+
+func getTrueAirSpeed(data [2]byte) TrueAirSpeed {
+	return TrueAirSpeed{
+		RE:    int(data[0] & 0x80),
+		Speed: int16(uint32(data[0]&0x7F)<<8 + uint32(data[1]&0xFF)),
+	}
 }
