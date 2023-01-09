@@ -39,7 +39,7 @@ type TrueAirSpeed struct {
 
 // TODO: Write the potential messages/states in const
 // TODO: Look into next extensions ( not clearly defined by spec)
-type SecondExtension struct {
+type SecondExtensionTRD struct {
 	LLC            string `json:"llc,omitempty"`
 	IPC            string `json:"ipc,omitempty"`
 	NOGO           string `json:"nogo,omitempty"`
@@ -48,21 +48,55 @@ type SecondExtension struct {
 	RCF            string `json:"rcf,omitempty"`
 	ThirdExtension byte   `json:"fx,omitempty"`
 }
-type FirstExtension struct {
-	DCR             string           `json:"dcr,omitempty"`
-	GBS             string           `json:"gbs,omitempty"`
-	SIM             string           `json:"sim,omitempty"`
-	TST             string           `json:"tst,omitempty"`
-	SAA             string           `json:"saa,omitempty"`
-	CL              string           `json:"cl,omitempty"`
-	SecondExtension *SecondExtension `json:"fx,omitempty"`
+type FirstExtensionTRD struct {
+	DCR             string              `json:"dcr,omitempty"`
+	GBS             string              `json:"gbs,omitempty"`
+	SIM             string              `json:"sim,omitempty"`
+	TST             string              `json:"tst,omitempty"`
+	SAA             string              `json:"saa,omitempty"`
+	CL              string              `json:"cl,omitempty"`
+	SecondExtension *SecondExtensionTRD `json:"fx,omitempty"`
 }
 type TargetReportDescriptor struct {
-	ATP string          `json:"atp,omitempty"`
-	ARC string          `json:"arc,omitempty"`
-	RC  string          `json:"rc,omitempty"`
-	RAB string          `json:"rab,omitempty"`
-	FX  *FirstExtension `json:"fx,omitempty"`
+	ATP string             `json:"atp,omitempty"`
+	ARC string             `json:"arc,omitempty"`
+	RC  string             `json:"rc,omitempty"`
+	RAB string             `json:"rab,omitempty"`
+	FX  *FirstExtensionTRD `json:"fx,omitempty"`
+}
+
+type NICVersion2OrHigher struct {
+	NIC int
+	AB  string
+	AC  string
+}
+type PIC struct {
+	PIC                       int
+	IntegrityContainmentBound float64
+	NUCp                      int
+	NIC_DO260A                string
+	NIC_Version2OrHigher      *NICVersion2OrHigher
+}
+type ThirdExtensionQI struct {
+	PIC *PIC `json:"pic,omitempty"`
+	FX  byte `json:"fx,omitempty"`
+}
+type SecondExtensionQI struct {
+	SILS string            `json:"sils,omitempty"`
+	SDA  int               `json:"sda,omitempty"`
+	GVA  int               `json:"gva,omitempty"`
+	FX   *ThirdExtensionQI `json:"thirdextension,omitempty"`
+}
+type FirstExtensionQI struct {
+	NICBaro int                `json:"nicbaro,omitempty"`
+	SIL     int                `json:"sil,omitempty"`
+	NACp    int                `json:"nacp,omitempty"`
+	FX      *SecondExtensionQI `json:"fx,omitempty"`
+}
+type QualityIndicators struct {
+	NUCrOrNACv int               `json:"nucrornacv,omitempty"`
+	NUCpOrNIC  int               `json:"nucpornic,omitempty"`
+	FX         *FirstExtensionQI `json:"fx,omitempty"`
 }
 
 type Cat021Model struct {
@@ -81,12 +115,12 @@ type Cat021Model struct {
 	TimeOfMessageReceptionForVelocityHighPrecision *TimeOfDayHighPrecision `json:"TimeOfMessageReceptionForVelocityHighPrecision,omitempty"`
 	TimeOfReportTransmission                       float64                 `json:"TimeOfReportTransmission,omitempty"`
 	TargetAddress                                  *TargetAddress          `json:"TargetAddress,omitempty"`
-	QualityIndicators                              string                  `json:"QualityIndicators,omitempty"`
+	QualityIndicators                              *QualityIndicators      `json:"QualityIndicators,omitempty"`
 	TrajectoryIntent                               string                  `json:"TrajectoryIntent,omitempty"`
 	PositionWGS84                                  *WGS84Coordinates       `json:"PositionWGS84,omitempty"`
 	PositionWGS84HighRes                           *WGS84Coordinates       `json:"PositionWGS84HighRes,omitempty"`
 	MessageAmplitude                               int64                   `json:"MessageAmplitude,omitempty"`
-	GeometricHeight                                *GeometricHeight         `json:"GeometricHeight,omitempty"`
+	GeometricHeight                                *GeometricHeight        `json:"GeometricHeight,omitempty"`
 	FlightLevel                                    float64                 `json:"FlightLevel,omitempty"`
 	SelectedAltitude                               int64                   `json:"SelectedAltitude,omitempty"`
 	FinalStateSelectedAltitude                     int64                   `json:"FinalStateSelectedAltitude,omitempty"`
@@ -190,7 +224,8 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			tmp := getGeometricHeight(payload)
 			data.GeometricHeight = &tmp
 		case 17:
-			// Do stuff
+			tmp := getQualityIndicators(*item.Compound)
+			data.QualityIndicators = &tmp
 		case 18:
 			// Do stuff
 		case 19:
@@ -302,8 +337,8 @@ func getTargetReportDescriptor(cp goasterix.Compound) TargetReportDescriptor {
 		trd.RAB = "Report from field monitor (fixed transponder)"
 	}
 
-	if tmp&0x1 != 0 {
-		fx1 := new(FirstExtension)
+	if isFieldExtention(tmp) {
+		fx1 := new(FirstExtensionTRD)
 
 		fstItem := 0
 		fstByte := 0
@@ -350,8 +385,8 @@ func getTargetReportDescriptor(cp goasterix.Compound) TargetReportDescriptor {
 			fx1.CL = "Reserved for future use"
 		}
 
-		if tmp&0x1 != 0 {
-			fx2 := new(SecondExtension)
+		if isFieldExtention(tmp) {
+			fx2 := new(SecondExtensionTRD)
 
 			sndItem := 0
 			tmp = cp.Secondary[sndItem].Payload()[fstByte] //?
@@ -401,6 +436,67 @@ func getTargetReportDescriptor(cp goasterix.Compound) TargetReportDescriptor {
 	}
 
 	return *trd
+}
+
+func getQualityIndicators(cp goasterix.Compound) QualityIndicators {
+	qi := new(QualityIndicators)
+
+	tmp := cp.Primary[0]
+
+	qi.NUCrOrNACv = int(tmp & 0xE0 >> 5)
+
+	qi.NUCpOrNIC = int(tmp & 0x1E >> 1)
+
+	if isFieldExtention(tmp) {
+		fx1 := new(FirstExtensionQI)
+
+		fstItem := 0
+		fstByte := 0
+		tmp = cp.Secondary[fstItem].Payload()[fstByte]
+
+		fx1.NICBaro = int(tmp & 0x80 >> (BYTESIZE - 1))
+
+		fx1.SIL = int(tmp & 0x60 >> (BYTESIZE - 3))
+
+		fx1.NACp = int(tmp & 0x1E >> 1)
+
+		if isFieldExtention(tmp) {
+			fx2 := new(SecondExtensionQI)
+			sndItem := 1
+			tmp = cp.Secondary[sndItem].Payload()[fstByte]
+
+			if tmp&0x20 == 0 {
+				fx2.SILS = "flight-hour"
+			} else {
+				fx2.SILS = "sample"
+			}
+
+			fx2.SDA = int(tmp & 0x18 >> 3)
+
+			fx2.GVA = int(tmp & 0x06 >> 1)
+
+			if isFieldExtention(tmp) {
+				fx3 := new(ThirdExtensionQI)
+				thirdItem := 2
+				tmp = cp.Secondary[thirdItem].Payload()[fstByte]
+
+				fx3.PIC = getPIC(int(tmp & 0xF0 >> 4))
+
+				// TODO: Confirm if further extensions are needed and how they'll be formatted
+				//		 (not clear in spec)
+				fx3.FX = tmp & 0x01
+
+				fx2.FX = fx3
+
+			}
+
+			fx1.FX = fx2
+		}
+
+		qi.FX = fx1
+	}
+
+	return *qi
 }
 
 func wgs84Coordinates(data []byte) WGS84Coordinates {
@@ -459,4 +555,102 @@ func getGeometricHeight(data [2]byte) GeometricHeight {
 		Height:      float64(tmpHeight) * 6.25,
 		GreaterThan: greaterThan,
 	}
+}
+
+func isFieldExtention(data byte) bool {
+	return data&0x01 == 1
+}
+
+func getPIC(data int) *PIC {
+	tmpPIC := new(PIC)
+	tmpNICV2 := new(NICVersion2OrHigher)
+	switch data {
+	case 0:
+		tmpPIC.NUCp = 0
+		tmpPIC.NIC_DO260A = "0"
+
+		tmpNICV2.NIC = 0
+	case 1:
+		tmpPIC.IntegrityContainmentBound = 20.0
+		tmpPIC.NUCp = 1
+		tmpPIC.NIC_DO260A = "1"
+
+		tmpNICV2.NIC = 1
+	case 2:
+		tmpPIC.IntegrityContainmentBound = 10.0
+		tmpPIC.NUCp = 2
+	case 3:
+		tmpPIC.IntegrityContainmentBound = 8.0
+		tmpPIC.NIC_DO260A = "2"
+
+		tmpNICV2.NIC = 2
+	case 4:
+		tmpPIC.IntegrityContainmentBound = 4.0
+		tmpPIC.NIC_DO260A = "3"
+
+		tmpNICV2.NIC = 3
+	case 5:
+		tmpPIC.IntegrityContainmentBound = 2.0
+		tmpPIC.NUCp = 3
+		tmpPIC.NIC_DO260A = "4"
+
+		tmpNICV2.NIC = 4
+	case 6:
+		tmpPIC.IntegrityContainmentBound = 1.0
+		tmpPIC.NUCp = 4
+		tmpPIC.NIC_DO260A = "5"
+
+		tmpNICV2.NIC = 5
+	case 7:
+		tmpPIC.IntegrityContainmentBound = 0.6
+		tmpPIC.NIC_DO260A = "6 (+ 1)"
+
+		tmpNICV2.NIC = 6
+		tmpNICV2.AB = "1/1"
+		tmpNICV2.AC = "0/1"
+	case 8:
+		tmpPIC.IntegrityContainmentBound = 0.5
+		tmpPIC.NIC_DO260A = "6 (+ 0)"
+
+		tmpNICV2.NIC = 6
+		tmpNICV2.AB = "0/0"
+	case 9:
+		tmpPIC.IntegrityContainmentBound = 0.3
+
+		tmpNICV2.NIC = 6
+		tmpNICV2.AB = "0/1"
+		tmpNICV2.AC = "1/0"
+	case 10:
+		tmpPIC.IntegrityContainmentBound = 0.2
+		tmpPIC.NUCp = 6
+		tmpPIC.NIC_DO260A = "7"
+
+		tmpNICV2.NIC = 7
+	case 11:
+		tmpPIC.IntegrityContainmentBound = 0.1
+		tmpPIC.NUCp = 7
+		tmpPIC.NIC_DO260A = "8"
+
+		tmpNICV2.NIC = 8
+	case 12:
+		tmpPIC.IntegrityContainmentBound = 0.04
+		tmpPIC.NIC_DO260A = "9"
+
+		tmpNICV2.NIC = 9
+	case 13:
+		tmpPIC.IntegrityContainmentBound = 0.013
+		tmpPIC.NUCp = 8
+		tmpPIC.NIC_DO260A = "10"
+
+		tmpNICV2.NIC = 10
+	case 14:
+		tmpPIC.IntegrityContainmentBound = 0.004
+		tmpPIC.NUCp = 9
+		tmpPIC.NIC_DO260A = "11"
+
+		tmpNICV2.NIC = 11
+	}
+	tmpPIC.NIC_Version2OrHigher = tmpNICV2
+
+	return tmpPIC
 }
