@@ -54,3 +54,79 @@ func Test_wgs84Coordinates_HighPrecision(t *testing.T) {
 		t.Logf("SUCCESS: %v; Expected: %v", res, output)
 	}
 }
+
+func Test_BasicGeometricHeight(t *testing.T){
+	// Arrange 
+	input := [2]byte{0x09, 0x60}
+	output := GeometricHeight{
+		Height: 15000.0,
+		GreaterThan: false,
+	}
+
+	// Act
+	res := getGeometricHeight(input)
+
+	// Assert
+	if res != output {
+		t.Errorf("FAIL: %v; Expected: %v", res, output)
+	} else {
+		t.Logf("SUCCESS: %v; Expected: %v", res, output)
+	}
+}
+
+func Test_MaxGeometricHeight(t *testing.T){
+	// Arrange 
+	input := [2]byte{0x5D, 0xC0}
+	output := GeometricHeight{
+		Height: 150000.0,
+		GreaterThan: false,
+	}
+
+	// Act
+	res := getGeometricHeight(input)
+
+	// Assert
+	if res != output {
+		t.Errorf("FAIL: %v; Expected: %v", res, output)
+	} else {
+		t.Logf("SUCCESS: %v; Expected: %v", res, output)
+	}
+}
+
+func Test_MinGeometricHeight(t *testing.T){
+	// Arrange 
+	input := [2]byte{0xFF, 0x10}
+	output := GeometricHeight{
+		Height: -1500.0,
+		GreaterThan: false,
+	}
+
+	// Act
+	res := getGeometricHeight(input)
+
+	// Assert
+	if res != output {
+		t.Errorf("FAIL: %v; Expected: %v", res, output)
+	} else {
+		t.Logf("SUCCESS: %v; Expected: %v", res, output)
+	}
+}
+
+func Test_GreaterThanGeometricHeight(t *testing.T){
+	// Arrange 
+	input := [2]byte{0x7F, 0xFF}
+	output := GeometricHeight{
+		Height: 204793.75,
+		GreaterThan: true,
+	}
+
+	// Act
+	res := getGeometricHeight(input)
+
+	// Assert
+	if res != output {
+		t.Errorf("FAIL: %v; Expected: %v", res, output)
+	} else {
+		t.Logf("SUCCESS: %v; Expected: %v", res, output)
+	}
+}

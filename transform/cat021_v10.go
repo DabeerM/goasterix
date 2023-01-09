@@ -7,7 +7,9 @@ import (
 	"github.com/mokhtarimokhtar/goasterix"
 )
 
-const ()
+const (
+	BYTESIZE = 8
+)
 
 var ErrTypeUnknown021 = errors.New("[ASTERIX Error CAT021] Message TYPE Unknown")
 
@@ -19,6 +21,11 @@ type WGS84Coordinates struct {
 type TargetAddress struct {
 	Target  byte  `json:"target,omitempty"`
 	Address int16 `json:"address,omitempty"` // TODO: Check if this is the best type?
+}
+
+type GeometricHeight struct {
+	Height      float64 `json:"height,omitempty"`
+	GreaterThan bool    `json:"greaterthan,omitempty"`
 }
 
 type AirSpeed struct {
@@ -79,7 +86,7 @@ type Cat021Model struct {
 	PositionWGS84                                  *WGS84Coordinates       `json:"PositionWGS84,omitempty"`
 	PositionWGS84HighRes                           *WGS84Coordinates       `json:"PositionWGS84HighRes,omitempty"`
 	MessageAmplitude                               int64                   `json:"MessageAmplitude,omitempty"`
-	GeometricHeight                                float64                 `json:"GeometricHeight,omitempty"`
+	GeometricHeight                                *GeometricHeight         `json:"GeometricHeight,omitempty"`
 	FlightLevel                                    float64                 `json:"FlightLevel,omitempty"`
 	SelectedAltitude                               int64                   `json:"SelectedAltitude,omitempty"`
 	FinalStateSelectedAltitude                     int64                   `json:"FinalStateSelectedAltitude,omitempty"`
@@ -178,7 +185,10 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			tmp, _ := timeOfDayHighPrecision(payload)
 			data.TimeOfMessageReceptionForVelocityHighPrecision = &tmp
 		case 16:
-			// Do stuff
+			var payload [2]byte
+			copy(payload[:], item.Fixed.Data[:])
+			tmp := getGeometricHeight(payload)
+			data.GeometricHeight = &tmp
 		case 17:
 			// Do stuff
 		case 18:
@@ -397,10 +407,10 @@ func wgs84Coordinates(data []byte) WGS84Coordinates {
 	var pos WGS84Coordinates
 
 	if len(data) == 6 {
-		tmpLatitude := uint32(data[0])<<16 + uint32(data[1])<<8 + uint32(data[2])
+		tmpLatitude := uint32(data[0])<<(2*BYTESIZE) + uint32(data[1])<<BYTESIZE + uint32(data[2])
 		pos.Latitude = float32(goasterix.TwoComplement32(24, tmpLatitude)) * 0.00002145767
 
-		tmpLongitude := uint32(data[3])<<16 + uint32(data[4])<<8 + uint32(data[5])
+		tmpLongitude := uint32(data[3])<<(2*BYTESIZE) + uint32(data[4])<<BYTESIZE + uint32(data[5])
 		pos.Longitude = float32(goasterix.TwoComplement32(32, tmpLongitude)) * 0.00002145767
 	} else { // high precision data
 		tmpLatitude := uint32(data[0])<<23 + uint32(data[1])<<15 + uint32(data[2])<<7 + uint32(data[3])
@@ -433,6 +443,20 @@ func getAirSpeed(data [2]byte) AirSpeed {
 func getTrueAirSpeed(data [2]byte) TrueAirSpeed {
 	return TrueAirSpeed{
 		RE:    int(data[0] & 0x80),
-		Speed: int16(uint32(data[0]&0x7F)<<8 + uint32(data[1]&0xFF)),
+		Speed: int16(uint32(data[0]&0x7F)<<BYTESIZE + uint32(data[1]&0xFF)),
+	}
+}
+
+// TODO: Double-check this...
+func getGeometricHeight(data [2]byte) GeometricHeight {
+	tmpHeight := goasterix.TwoComplement16(16, uint16(data[0])<<BYTESIZE+uint16(data[1]))
+	greaterThan := false
+	int16Max := int16(32767)
+	if tmpHeight == int16Max {
+		greaterThan = true
+	}
+	return GeometricHeight{
+		Height:      float64(tmpHeight) * 6.25,
+		GreaterThan: greaterThan,
 	}
 }
