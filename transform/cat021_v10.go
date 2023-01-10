@@ -125,6 +125,11 @@ type TargetStatus struct {
 	SS   string `json:"ss,omitempty"`
 }
 
+type VerticalRate struct {
+	RE           string  `json:"re,omitempty"`
+	VerticalRate float32 `json:"verticalrate,omitempty"`
+}
+
 type Cat021Model struct {
 	AircraftOperationStatus                        string                  `json:"aircraftOperationStatus,omitempty"`
 	DataSourceIdentification                       *SourceIdentifier       `json:"DataSourceIdentification,omitempty"`
@@ -153,7 +158,7 @@ type Cat021Model struct {
 	AirSpeed                                       *AirSpeed               `json:"AirSpeed,omitempty"`
 	TrueAirSpeed                                   *TrueAirSpeed           `json:"TrueAirSpeed,omitempty"`
 	MagneticHeading                                float64                 `json:"MagneticHeading,omitempty"`
-	BarometricVerticalRate                         float64                 `json:"BarometricVerticalRate,omitempty"`
+	BarometricVerticalRate                         *VerticalRate           `json:"BarometricVerticalRate,omitempty"`
 	GeometricVerticalRate                          float64                 `json:"GeometricVerticalRate,omitempty"`
 	AirborneGroundVector                           string                  `json:"AirborneGroundVector,omitempty"`
 	TrackNumber                                    uint16                  `json:"TrackNumber,omitempty"`
@@ -275,9 +280,13 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			tmp := getTargetStatus(payload)
 			data.TargetStatus = tmp
 		case 24:
-			// Do stuff
+			var payload [2]byte
+			copy(payload[:], item.Fixed.Data[:])
+			data.BarometricVerticalRate = getVerticalRate(payload)
 		case 25:
-			// Do stuff
+			var payload [2]byte
+			copy(payload[:], item.Fixed.Data[:])
+			data.BarometricVerticalRate = getVerticalRate(payload)
 		case 26:
 			// Do stuff
 		case 27:
@@ -710,6 +719,20 @@ func getRollAngle(data [2]byte) float64 {
 	sum := uint32(data[0])<<BYTESIZE + uint32(data[1])
 	tmpRoll := goasterix.TwoComplement32(16, sum)
 	return float64(tmpRoll) * float64(lsbResolution)
+}
+
+func getVerticalRate(data [2]byte) *VerticalRate {
+	baroRate := new(VerticalRate)
+
+	if int16(data[0])&0xF0>>BYTESIZE-1 == 0 {
+		baroRate.RE = "Value in defined range"
+	} else {
+		baroRate.RE = "Value exceeds defined range "
+	}
+
+	baroRate.VerticalRate = float32(int16(data[0])&0x7F<<BYTESIZE+int16(data[1])) * 6.25
+
+	return baroRate
 }
 
 func isFieldExtention(data byte) bool {
