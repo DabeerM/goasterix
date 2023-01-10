@@ -99,6 +99,27 @@ type QualityIndicators struct {
 	FX         *FirstExtensionQI `json:"fx,omitempty"`
 }
 
+type MOPSVersion struct {
+	VNS string `json:"vns,omitempty"`
+	VN  string `json:"vn,omitempty"`
+	LTT string `json:"ltt,omitempty"`
+}
+
+type Mode3ACodeInOctal struct {
+	A4 int `json:"a4,omitempty"`
+	A2 int `json:"a2,omitempty"`
+	A1 int `json:"a1,omitempty"`
+	B4 int `json:"b4,omitempty"`
+	B2 int `json:"b2,omitempty"`
+	B1 int `json:"b1,omitempty"`
+	C4 int `json:"c4,omitempty"`
+	C2 int `json:"c2,omitempty"`
+	C1 int `json:"c1,omitempty"`
+	D4 int `json:"d4,omitempty"`
+	D2 int `json:"d2,omitempty"`
+	D1 int `json:"d1,omitempty"`
+}
+
 type Cat021Model struct {
 	AircraftOperationStatus                        string                  `json:"aircraftOperationStatus,omitempty"`
 	DataSourceIdentification                       *SourceIdentifier       `json:"DataSourceIdentification,omitempty"`
@@ -106,7 +127,7 @@ type Cat021Model struct {
 	ServiceManagement                              string                  `json:"ServiceManagement,omitempty"`
 	EmitterCategory                                string                  `json:"EmitterCategory,omitempty"`
 	TargetReportDescriptor                         *TargetReportDescriptor `json:"TargetReportDescriptor,omitempty"`
-	Mode3ACode                                     string                  `json:"Mode3ACode,omitempty"`
+	Mode3ACode                                     *Mode3ACodeInOctal      `json:"Mode3ACode,omitempty"`
 	TimeOfApplicabilityForPosition                 float64                 `json:"timeOfApplicabilityForPosition,omitempty"`
 	TimeOfApplicabilityForVelocity                 float64                 `json:"timeOfApplicabilityForVelocity,omitempty"`
 	TimeOfMessageReceptionForPosition              float64                 `json:"TimeOfMessageReceptionForPosition,omitempty"`
@@ -134,7 +155,7 @@ type Cat021Model struct {
 	TrackAngleRate                                 float64                 `json:"TrackAngleRate,omitempty"`
 	TargetIdentification                           string                  `json:"TargetIdentification,omitempty"`
 	TargetStatus                                   string                  `json:"TargetStatus,omitempty"`
-	MPOSVersion                                    string                  `json:"MPOSVersion,omitempty"`
+	MOPSVersion                                    *MOPSVersion            `json:"MPOSVersion,omitempty"`
 	MetInformation                                 string                  `json:"MetInformation,omitempty"`
 	RollAngle                                      float64                 `json:"RollAngle,omitempty"`
 	ModeSMBData                                    string                  `json:"ModeSMBData,omitempty"`
@@ -227,9 +248,13 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			tmp := getQualityIndicators(*item.Compound)
 			data.QualityIndicators = &tmp
 		case 18:
-			// Do stuff
+			tmp := getMOPS(*item.Compound)
+			data.MOPSVersion = &tmp
 		case 19:
-			// Do stuff
+			var payload [2]byte
+			copy(payload[:], item.Fixed.Data[:])
+			tmp := getMode3ACode(payload)
+			data.Mode3ACode = tmp
 		case 20:
 			// Do stuff
 		case 21:
@@ -555,6 +580,65 @@ func getGeometricHeight(data [2]byte) GeometricHeight {
 		Height:      float64(tmpHeight) * 6.25,
 		GreaterThan: greaterThan,
 	}
+}
+
+func getMOPS(cp goasterix.Compound) MOPSVersion {
+	mops := new(MOPSVersion)
+
+	tmp := cp.Primary[0]
+
+	if tmp&0x40>>6 == 0 {
+		mops.VNS = "supported"
+	} else {
+		mops.VNS = "not supported"
+	}
+
+	switch tmp & 0x38 >> 3 {
+	case 0:
+		mops.VN = "ED102/DO-260"
+	case 1:
+		mops.VN = "DO-260A"
+	case 2:
+		mops.VN = "ED102A/DO-260B"
+	case 3:
+		mops.VN = "ED102B-DO-260C"
+	}
+
+	switch tmp & 0x07 {
+	case 0:
+		mops.LTT = "other"
+	case 1:
+		mops.LTT = "uat"
+	case 2:
+		mops.LTT = "1090 es"
+	case 3:
+		mops.LTT = "vdl 4"
+	default:
+		mops.LTT = "undefined"
+	}
+
+	return *mops
+}
+
+func getMode3ACode(data [2]byte) *Mode3ACodeInOctal {
+	tmpMode3ACode := new(Mode3ACodeInOctal)
+	tmpData := data
+
+	tmpMode3ACode.A1 = int(tmpData[0]&0x8)
+	tmpMode3ACode.A2 = int(tmpData[0]&0x4)
+	tmpMode3ACode.A4 = int(tmpData[0]&0x2)
+	tmpMode3ACode.B1 = int(tmpData[0]&0x1)
+	tmpMode3ACode.B2 = int(tmpData[1]&0x80)
+	tmpMode3ACode.B4 = int(tmpData[1]&0x40)
+	tmpMode3ACode.C1 = int(tmpData[1]&0x20)
+	tmpMode3ACode.C2 = int(tmpData[1]&0x10)
+	tmpMode3ACode.C4 = int(tmpData[1]&0x8)
+	tmpMode3ACode.C1 = int(tmpData[1]&0x4)
+	tmpMode3ACode.C2 = int(tmpData[1]&0x2)
+	tmpMode3ACode.C4 = int(tmpData[1]&0x1)
+
+	return tmpMode3ACode
+
 }
 
 func isFieldExtention(data byte) bool {
