@@ -256,7 +256,10 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			tmp := getMode3ACode(payload)
 			data.Mode3ACode = tmp
 		case 20:
-			// Do stuff
+			var payload [2]byte
+			copy(payload[:], item.Fixed.Data[:])
+			tmp := getRollAngle(payload)
+			data.RollAngle = tmp
 		case 21:
 			// Do stuff
 		case 22:
@@ -624,21 +627,28 @@ func getMode3ACode(data [2]byte) *Mode3ACodeInOctal {
 	tmpMode3ACode := new(Mode3ACodeInOctal)
 	tmpData := data
 
-	tmpMode3ACode.A1 = int(tmpData[0]&0x8)
-	tmpMode3ACode.A2 = int(tmpData[0]&0x4)
-	tmpMode3ACode.A4 = int(tmpData[0]&0x2)
-	tmpMode3ACode.B1 = int(tmpData[0]&0x1)
-	tmpMode3ACode.B2 = int(tmpData[1]&0x80)
-	tmpMode3ACode.B4 = int(tmpData[1]&0x40)
-	tmpMode3ACode.C1 = int(tmpData[1]&0x20)
-	tmpMode3ACode.C2 = int(tmpData[1]&0x10)
-	tmpMode3ACode.C4 = int(tmpData[1]&0x8)
-	tmpMode3ACode.C1 = int(tmpData[1]&0x4)
-	tmpMode3ACode.C2 = int(tmpData[1]&0x2)
-	tmpMode3ACode.C4 = int(tmpData[1]&0x1)
+	tmpMode3ACode.A1 = int(tmpData[0] & 0x8)
+	tmpMode3ACode.A2 = int(tmpData[0] & 0x4)
+	tmpMode3ACode.A4 = int(tmpData[0] & 0x2)
+	tmpMode3ACode.B1 = int(tmpData[0] & 0x1)
+	tmpMode3ACode.B2 = int(tmpData[1] & 0x80)
+	tmpMode3ACode.B4 = int(tmpData[1] & 0x40)
+	tmpMode3ACode.C1 = int(tmpData[1] & 0x20)
+	tmpMode3ACode.C2 = int(tmpData[1] & 0x10)
+	tmpMode3ACode.C4 = int(tmpData[1] & 0x8)
+	tmpMode3ACode.C1 = int(tmpData[1] & 0x4)
+	tmpMode3ACode.C2 = int(tmpData[1] & 0x2)
+	tmpMode3ACode.C4 = int(tmpData[1] & 0x1)
 
 	return tmpMode3ACode
 
+}
+
+func getRollAngle(data [2]byte) float64 {
+	lsbResolution := 0.01
+	sum := uint32(data[0])<<BYTESIZE + uint32(data[1])
+	tmpRoll := goasterix.TwoComplement32(16, sum)
+	return float64(tmpRoll) * float64(lsbResolution)
 }
 
 func isFieldExtention(data byte) bool {
