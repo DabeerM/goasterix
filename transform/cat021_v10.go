@@ -117,6 +117,14 @@ type Mode3ACodeInOctal struct {
 	D1 int `json:"d1,omitempty"`
 }
 
+type TargetStatus struct {
+	ICF  string `json:"icf,omitempty"`
+	LNAV string `json:"lnav,omitempty"`
+	ME   bool   `json:"me,omitempty"`
+	PS   string `json:"ps,omitempty"`
+	SS   string `json:"ss,omitempty"`
+}
+
 type Cat021Model struct {
 	AircraftOperationStatus                        string                  `json:"aircraftOperationStatus,omitempty"`
 	DataSourceIdentification                       *SourceIdentifier       `json:"DataSourceIdentification,omitempty"`
@@ -151,7 +159,7 @@ type Cat021Model struct {
 	TrackNumber                                    uint16                  `json:"TrackNumber,omitempty"`
 	TrackAngleRate                                 float64                 `json:"TrackAngleRate,omitempty"`
 	TargetIdentification                           string                  `json:"TargetIdentification,omitempty"`
-	TargetStatus                                   string                  `json:"TargetStatus,omitempty"`
+	TargetStatus                                   *TargetStatus           `json:"TargetStatus,omitempty"`
 	MOPSVersion                                    *MOPSVersion            `json:"MPOSVersion,omitempty"`
 	MetInformation                                 string                  `json:"MetInformation,omitempty"`
 	RollAngle                                      float64                 `json:"RollAngle,omitempty"`
@@ -260,9 +268,12 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			// Method is from Cat062
 			data.FlightLevel = measuredFlightLevel(payload)
 		case 22:
-			// Do stuff
+			data.MagneticHeading = float64(uint16(item.Fixed.Data[0])<<8+uint16(item.Fixed.Data[1])) * 0.0055
 		case 23:
-			// Do stuff
+			var payload []byte
+			copy(payload, item.Fixed.Data[:])
+			tmp := getTargetStatus(payload)
+			data.TargetStatus = tmp
 		case 24:
 			// Do stuff
 		case 25:
@@ -639,6 +650,59 @@ func getMode3ACode(data [2]byte) *Mode3ACodeInOctal {
 
 	return tmpMode3ACode
 
+}
+
+func getTargetStatus(data []byte) *TargetStatus {
+	ts := new(TargetStatus)
+	tmp := data[0]
+
+	if tmp&0x80 == 0 {
+		ts.ICF = "No intent change active"
+	} else {
+		ts.ICF = "Intent change flag raised"
+	}
+
+	if tmp&0x40 == 0 {
+		ts.LNAV = "engaged"
+	} else {
+		ts.LNAV = "not engaged"
+	}
+
+	if tmp&0x20 == 0 {
+		ts.PS = "No military emergency"
+	} else {
+		ts.PS = "Military emergency"
+	}
+
+	switch tmp & 0x1C >> 2 {
+	case 0:
+		ts.PS = "No emergency/not reported"
+	case 1:
+		ts.PS = "General emergency"
+	case 2:
+		ts.PS = "Lifeguard/medical emergency"
+	case 3:
+		ts.PS = "Minimum fuel"
+	case 4:
+		ts.PS = "No communications"
+	case 5:
+		ts.PS = "Unlawful interference"
+	case 6:
+		ts.PS = "\"Downed\" Aircraft"
+	}
+
+	switch tmp & 0x03 {
+	case 0:
+		ts.SS = "No condition reported"
+	case 1:
+		ts.SS = "Permanent Alert (Emergency condition)"
+	case 2:
+		ts.SS = "Temporary Alert (change in Mode 3/A Code other than emergency)"
+	case 3:
+		ts.SS = "SPI set"
+	}
+
+	return ts
 }
 
 func getRollAngle(data [2]byte) float64 {
