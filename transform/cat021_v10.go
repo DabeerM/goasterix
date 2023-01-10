@@ -1,8 +1,10 @@
 package transform
 
 import (
+	"encoding/hex"
 	"errors"
 	"math"
+	"strings"
 
 	"github.com/mokhtarimokhtar/goasterix"
 )
@@ -16,11 +18,6 @@ var ErrTypeUnknown021 = errors.New("[ASTERIX Error CAT021] Message TYPE Unknown"
 type WGS84Coordinates struct {
 	Latitude  float32 `json:"latitude,omitempty"`
 	Longitude float32 `json:"longitude,omitempty"`
-}
-
-type TargetAddress struct {
-	Target  byte  `json:"target,omitempty"`
-	Address int16 `json:"address,omitempty"` // TODO: Check if this is the best type?
 }
 
 type GeometricHeight struct {
@@ -135,14 +132,14 @@ type Cat021Model struct {
 	TimeOfMessageReceptionForVelocity              float64                 `json:"TimeOfMessageReceptionForVelocity,omitempty"`
 	TimeOfMessageReceptionForVelocityHighPrecision *TimeOfDayHighPrecision `json:"TimeOfMessageReceptionForVelocityHighPrecision,omitempty"`
 	TimeOfReportTransmission                       float64                 `json:"TimeOfReportTransmission,omitempty"`
-	TargetAddress                                  *TargetAddress          `json:"TargetAddress,omitempty"`
+	TargetAddress                                  string                  `json:"TargetAddress,omitempty"`
 	QualityIndicators                              *QualityIndicators      `json:"QualityIndicators,omitempty"`
 	TrajectoryIntent                               string                  `json:"TrajectoryIntent,omitempty"`
 	PositionWGS84                                  *WGS84Coordinates       `json:"PositionWGS84,omitempty"`
 	PositionWGS84HighRes                           *WGS84Coordinates       `json:"PositionWGS84HighRes,omitempty"`
 	MessageAmplitude                               int64                   `json:"MessageAmplitude,omitempty"`
 	GeometricHeight                                *GeometricHeight        `json:"GeometricHeight,omitempty"`
-	FlightLevel                                    float64                 `json:"FlightLevel,omitempty"`
+	FlightLevel                                    float32                 `json:"FlightLevel,omitempty"`
 	SelectedAltitude                               int64                   `json:"SelectedAltitude,omitempty"`
 	FinalStateSelectedAltitude                     int64                   `json:"FinalStateSelectedAltitude,omitempty"`
 	AirSpeed                                       *AirSpeed               `json:"AirSpeed,omitempty"`
@@ -213,10 +210,7 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			tmp := getTrueAirSpeed(payload)
 			data.TrueAirSpeed = &tmp
 		case 11:
-			var tmp TargetAddress
-			tmp.Target = item.Fixed.Data[0]
-			tmp.Address = int16(item.Fixed.Data[1]) + int16(item.Fixed.Data[2])
-			data.TargetAddress = &tmp
+			data.TargetAddress = strings.ToUpper(hex.EncodeToString(item.Fixed.Data))
 		case 12:
 			// TODO: Check correctness
 			var payload [3]byte
@@ -261,7 +255,10 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			tmp := getRollAngle(payload)
 			data.RollAngle = tmp
 		case 21:
-			// Do stuff
+			var payload [2]byte
+			copy(payload[:], item.Fixed.Data[:])
+			// Method is from Cat062
+			data.FlightLevel = measuredFlightLevel(payload)
 		case 22:
 			// Do stuff
 		case 23:
