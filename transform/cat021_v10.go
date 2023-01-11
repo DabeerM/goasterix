@@ -130,6 +130,12 @@ type VerticalRate struct {
 	VerticalRate float32 `json:"verticalrate,omitempty"`
 }
 
+type AirborneGroundVector struct {
+	RE          string  `json:"re,omitempty"`
+	GroundSpeed float32 `json:"groundspeed,omitempty"`
+	TrackAngle  float32 `json:"trackangle,omitempty"`
+}
+
 type Cat021Model struct {
 	AircraftOperationStatus                        string                  `json:"aircraftOperationStatus,omitempty"`
 	DataSourceIdentification                       *SourceIdentifier       `json:"DataSourceIdentification,omitempty"`
@@ -160,7 +166,7 @@ type Cat021Model struct {
 	MagneticHeading                                float64                 `json:"MagneticHeading,omitempty"`
 	BarometricVerticalRate                         *VerticalRate           `json:"BarometricVerticalRate,omitempty"`
 	GeometricVerticalRate                          float64                 `json:"GeometricVerticalRate,omitempty"`
-	AirborneGroundVector                           string                  `json:"AirborneGroundVector,omitempty"`
+	AirborneGroundVector                           *AirborneGroundVector   `json:"AirborneGroundVector,omitempty"`
 	TrackNumber                                    uint16                  `json:"TrackNumber,omitempty"`
 	TrackAngleRate                                 float64                 `json:"TrackAngleRate,omitempty"`
 	TargetIdentification                           string                  `json:"TargetIdentification,omitempty"`
@@ -288,7 +294,9 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			copy(payload[:], item.Fixed.Data[:])
 			data.BarometricVerticalRate = getVerticalRate(payload)
 		case 26:
-			// Do stuff
+			var payload [4]byte
+			copy(payload[:], item.Fixed.Data[:])
+			data.AirborneGroundVector = getAirborneGroundVector(payload)
 		case 27:
 			// Do stuff
 		case 28:
@@ -733,6 +741,23 @@ func getVerticalRate(data [2]byte) *VerticalRate {
 	baroRate.VerticalRate = float32(int16(data[0])&0x7F<<BYTESIZE+int16(data[1])) * 6.25
 
 	return baroRate
+}
+
+func getAirborneGroundVector(data [4]byte) *AirborneGroundVector {
+	agv := new(AirborneGroundVector)
+
+	if data[0]&0x80>>3 == 0 {
+		agv.RE = "Value in defined range"
+	} else {
+		agv.RE = "Value exceeds defined range"
+	}
+
+	agv.GroundSpeed = float32(int16(data[0])&0x7F<<BYTESIZE+int16(data[1])&0xFF) * float32(math.Pow(2, -14))
+
+	tmpLSBTrackAngle := float32(360 / math.Pow(2, 16))
+	agv.TrackAngle = float32(int16(data[2])&0xFF<<BYTESIZE+int16(data[3])&0xFF) * tmpLSBTrackAngle
+
+	return agv
 }
 
 func isFieldExtention(data byte) bool {
