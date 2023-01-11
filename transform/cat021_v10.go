@@ -136,6 +136,33 @@ type AirborneGroundVector struct {
 	TrackAngle  float32 `json:"trackangle,omitempty"`
 }
 
+type TrajectoryIntentData struct {
+	REP       int8    `json:"rep,omitempty"`
+	TCA       int     `json:"tca,omitempty"`
+	NC        int     `json:"nc,omitempty"`
+	TCPNumber int     `json:"tcpnumber,omitempty"`
+	Latitude  float32 `json:"latitude,omitempty"`
+	Longitude float32 `json:"longitude,omitempty"`
+	PointType int     `json:"pointtype,omitempty"`
+	TD        int     `json:"td,omitempty"`
+	TRA       int     `json:"tra,omitempty"`
+	TOA       int     `json:"toa,omitempty"`
+	TOV       string  `json:"tov,omitempty"`
+	TTR       string  `json:"ttr,omitempty"`
+}
+type TrajectoryIntentStatus struct {
+	NAV string `json:"nav,omitempty"`
+	NVB string `json:"nvb,omitempty"`
+	FX  int `json:"fx,omitempty"`
+}
+type TrajectoryIntent struct {
+	TIS     string                  `json:"tis,omitempty"`
+	TISBody *TrajectoryIntentStatus `json:"tisbody,omitempty"`
+	TID     string                  `json:"tid,omitempty"`
+	TIDBody *TrajectoryIntentData   `json:"tidbody,omitempty"`
+	FX      string                  `json:"fx,omitempty"`
+}
+
 type Cat021Model struct {
 	AircraftOperationStatus                        string                  `json:"aircraftOperationStatus,omitempty"`
 	DataSourceIdentification                       *SourceIdentifier       `json:"DataSourceIdentification,omitempty"`
@@ -159,8 +186,8 @@ type Cat021Model struct {
 	MessageAmplitude                               int64                   `json:"MessageAmplitude,omitempty"`
 	GeometricHeight                                *GeometricHeight        `json:"GeometricHeight,omitempty"`
 	FlightLevel                                    float32                 `json:"FlightLevel,omitempty"`
-	SelectedAltitude                               int64                   `json:"SelectedAltitude,omitempty"`
-	FinalStateSelectedAltitude                     int64                   `json:"FinalStateSelectedAltitude,omitempty"`
+	SelectedAltitude                               *SelectedAltitude       `json:"SelectedAltitude,omitempty"`
+	FinalStateSelectedAltitude                     *StateSelectedAltitude  `json:"FinalStateSelectedAltitude,omitempty"`
 	AirSpeed                                       *AirSpeed               `json:"AirSpeed,omitempty"`
 	TrueAirSpeed                                   *TrueAirSpeed           `json:"TrueAirSpeed,omitempty"`
 	MagneticHeading                                float64                 `json:"MagneticHeading,omitempty"`
@@ -199,7 +226,6 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 		case 4:
 			data.ServiceIdentification = item.Fixed.Data[0] // TODO: Double check?
 		case 5:
-			// TODO: Check correctness
 			var payload [3]byte
 			copy(payload[:], item.Fixed.Data[:])
 			data.TimeOfApplicabilityForPosition, _ = timeOfDay(payload)
@@ -214,7 +240,6 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			tmp := wgs84Coordinates(payload)
 			data.PositionWGS84 = &tmp
 		case 8:
-			// TODO: Check correctness
 			var payload [3]byte
 			copy(payload[:], item.Fixed.Data[:])
 			data.TimeOfApplicabilityForVelocity, _ = timeOfDay(payload)
@@ -231,7 +256,6 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 		case 11:
 			data.TargetAddress = strings.ToUpper(hex.EncodeToString(item.Fixed.Data))
 		case 12:
-			// TODO: Check correctness
 			var payload [3]byte
 			copy(payload[:], item.Fixed.Data[:])
 			data.TimeOfMessageReceptionForPosition, _ = timeOfDay(payload)
@@ -302,19 +326,32 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			copy(payload[:], item.Fixed.Data[:])
 			data.TrackAngleRate = getTrackAngleRate(payload)
 		case 28:
-			// Do stuff
+			var payload [3]byte
+			copy(payload[:], item.Fixed.Data[:])
+			data.TimeOfReportTransmission, _ = timeOfDay(payload)
 		case 29:
-			// Do stuff
+			var payload [6]byte
+			copy(payload[:], item.Fixed.Data[:])
+			tmp, _ := modeSIdentification(payload)
+			data.TargetIdentification = tmp
 		case 30:
-			// Do stuff
+			var payload [1]byte
+			copy(payload[:], item.Fixed.Data[:])
+			data.EmitterCategory = getEmitterCategory(payload)
 		case 31:
-			// Do stuff
+			// TODO: Implement Met Weather after clarrification with Eurocontrol
 		case 32:
-			// Do stuff
+			var payload [2]byte
+			copy(payload[:], item.Fixed.Data[:])
+			data.SelectedAltitude = getSelectedAltitude(payload)
 		case 33:
-			// Do stuff
+			var payload [2]byte
+			copy(payload[:], item.Fixed.Data[:])
+			data.FinalStateSelectedAltitude = getFinalSelectedAltitude(payload)
 		case 34:
-			// Do stuff
+			// TODO: Implement Trajectory Intent
+			//tmp := getTrajectoryIntent(*item.Compound)
+			//data.TrajectoryIntent = &tmp
 		case 35:
 			// Do stuff
 		case 36:
@@ -765,6 +802,148 @@ func getAirborneGroundVector(data [4]byte) *AirborneGroundVector {
 func getTrackAngleRate(data [2]byte) float32 {
 	return float32(int16(data[0])&0x03<<BYTESIZE+int16(data[1])&0xFF) * float32(1.0/32)
 }
+
+func getEmitterCategory(data [1]byte) string {
+	emitterCategoryStr := ""
+
+	switch int8(data[0]) {
+	case 0:
+		emitterCategoryStr = "No ADS-B Emitter Category Information"
+	case 1:
+		emitterCategoryStr = "light aircraft <= 15500 lbs"
+	case 2:
+		emitterCategoryStr = "15500 lbs < small aircraft <75000 lbs"
+	case 3:
+		emitterCategoryStr = "75000 lbs < medium a/c < 300000 lbs"
+	case 4:
+		emitterCategoryStr = "High Vortex Large"
+	case 5:
+		emitterCategoryStr = "300000 lbs <= heavy aircraft"
+	case 6:
+		emitterCategoryStr = "highly manoeuvrable (5g acceleration capability) and high speed (>400 knots cruise)"
+	case 7:
+		emitterCategoryStr = "reserved"
+	case 8:
+		emitterCategoryStr = "reserved"
+	case 9:
+		emitterCategoryStr = "reserved"
+	case 10:
+		emitterCategoryStr = "rotocraft"
+	case 11:
+		emitterCategoryStr = "glider / sailplane"
+	case 12:
+		emitterCategoryStr = "lighter-than-air"
+	case 13:
+		emitterCategoryStr = "unmanned aerial vehicle"
+	case 14:
+		emitterCategoryStr = "space / transatmospheric vehicle"
+	case 15:
+		emitterCategoryStr = "ultralight / handglider / paraglider"
+	case 16:
+		emitterCategoryStr = "parachutist / skydiver"
+	case 17:
+		emitterCategoryStr = "reserved"
+	case 18:
+		emitterCategoryStr = "reserved"
+	case 19:
+		emitterCategoryStr = "reserved"
+	case 20:
+		emitterCategoryStr = "surface emergency vehicle"
+	case 21:
+		emitterCategoryStr = "surface service vehicle"
+	case 22:
+		emitterCategoryStr = "fixed ground or tethered obstruction"
+	case 23:
+		emitterCategoryStr = "cluster obstacle"
+	case 24:
+		emitterCategoryStr = "line obstacle"
+	}
+
+	return emitterCategoryStr
+}
+
+func getSelectedAltitude(data [2]byte) *SelectedAltitude {
+	tmp := new(SelectedAltitude)
+	if data[0]&0x80 != 0 {
+		tmp.SAS = "source_information_provided"
+	} else {
+		tmp.SAS = "no_source_information_provided"
+	}
+	source := data[0] & 0x60 >> 5
+	switch source {
+	case 0:
+		tmp.Source = "unknown"
+	case 1:
+		tmp.Source = "aircraft_altitude"
+	case 2:
+		tmp.Source = "fcu_mcp_selected_altitude"
+	case 3:
+		tmp.Source = "fms_selected_altitude"
+	}
+	altitude := goasterix.TwoComplement16(13, uint16(data[0]&0x1f)<<8+uint16(data[1]))
+	tmp.Altitude = float64(altitude) * 25
+	return tmp
+}
+
+func getFinalSelectedAltitude(data [2]byte) *StateSelectedAltitude {
+	tmp := new(StateSelectedAltitude)
+	if data[0]&0x80 != 0 {
+		tmp.MV = "manage_vertical_mode_active"
+	} else {
+		tmp.MV = "manage_vertical_mode_not_active"
+	}
+	if data[0]&0x40 != 0 {
+		tmp.AH = "altitude_hold_active"
+	} else {
+		tmp.AH = "altitude_hold_not_active"
+	}
+	if data[0]&0x20 != 0 {
+		tmp.AM = "approach_mode_active"
+	} else {
+		tmp.AM = "approach_mode_not_active"
+	}
+
+	altitude := goasterix.TwoComplement16(13, uint16(data[0]&0x1f)<<8+uint16(data[1]))
+	tmp.Altitude = float64(altitude) * 25
+	return tmp
+}
+
+/*
+func getTrajectoryIntent(cp goasterix.Compound) *TrajectoryIntent {
+
+	tmpTI := new(TrajectoryIntent)
+	subfieldPositionInCompound := 0
+
+	if cp.Primary[0]&0x80>>BYTESIZE == 1 {
+		tmpData := cp.Secondary[subfieldPositionInCompound].Extended
+		
+		tmpTIS := new(TrajectoryIntentStatus)
+		if tmpData.Primary[0]&0x80>>BYTESIZE == 0 {
+			tmpTIS.NAV = "Trajectory Intent Data is available for this aircraft"
+		} else {
+			tmpTIS.NAV = "Trajectory Intent Data is not available for this aircraft"
+		}
+		if tmpData.Secondary[0]&0x40>>BYTESIZE == 0 {
+			tmpTIS.NVB = "Trajectory Intent Data is valid"
+		} else {
+			tmpTIS.NVB = "Trajectory Intent Data is not valid"
+		}
+		tmpTIS.FX = tmpData&0x01 // TODO: Implement this
+
+		subfieldPositionInCompound += 1
+	}
+
+	if cp.Primary[0]&0x40>>BYTESIZE == 1 {
+		tmpData := cp.Secondary[subfieldPositionInCompound].Extended
+
+		tmpTID := new(TrajectoryIntentData)
+		// TODO: Fill out the extraction logic
+	}
+
+	return tmpTI
+
+}
+*/
 
 func isFieldExtention(data byte) bool {
 	return data&0x01 == 1
