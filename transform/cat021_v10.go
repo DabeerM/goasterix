@@ -168,7 +168,7 @@ type Cat021Model struct {
 	GeometricVerticalRate                          float64                 `json:"GeometricVerticalRate,omitempty"`
 	AirborneGroundVector                           *AirborneGroundVector   `json:"AirborneGroundVector,omitempty"`
 	TrackNumber                                    uint16                  `json:"TrackNumber,omitempty"`
-	TrackAngleRate                                 float64                 `json:"TrackAngleRate,omitempty"`
+	TrackAngleRate                                 float32                 `json:"TrackAngleRate,omitempty"`
 	TargetIdentification                           string                  `json:"TargetIdentification,omitempty"`
 	TargetStatus                                   *TargetStatus           `json:"TargetStatus,omitempty"`
 	MOPSVersion                                    *MOPSVersion            `json:"MPOSVersion,omitempty"`
@@ -298,7 +298,9 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			copy(payload[:], item.Fixed.Data[:])
 			data.AirborneGroundVector = getAirborneGroundVector(payload)
 		case 27:
-			// Do stuff
+			var payload [2]byte
+			copy(payload[:], item.Fixed.Data[:])
+			data.TrackAngleRate = getTrackAngleRate(payload)
 		case 28:
 			// Do stuff
 		case 29:
@@ -758,6 +760,10 @@ func getAirborneGroundVector(data [4]byte) *AirborneGroundVector {
 	agv.TrackAngle = float32(int16(data[2])&0xFF<<BYTESIZE+int16(data[3])&0xFF) * tmpLSBTrackAngle
 
 	return agv
+}
+
+func getTrackAngleRate(data [2]byte) float32 {
+	return float32(int16(data[0])&0x03<<BYTESIZE+int16(data[1])&0xFF) * float32(1.0/32)
 }
 
 func isFieldExtention(data byte) bool {
