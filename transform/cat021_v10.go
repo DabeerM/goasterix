@@ -186,6 +186,24 @@ type SurfaceCapabilitiesAndCharacteristics struct {
 	FX    *FirstExtensionSCC `json:"firstextension,omitempty"`
 }
 
+type ModeSMBData struct {
+	REP  int8   `json:"rep,omitempty"`
+	MB   string `json:"mb,omitempty"`
+	BDS1 int8   `json:"bds1,omitempty"`
+	BDS2 int8   `json:"bds2,omitempty"`
+}
+
+type ACASResolutionAdvisoryReport struct {
+	TYP  int8  `json:"typ,omitempty"`
+	STYP int8  `json:"styp,omitempty"`
+	ARA  int16 `json:"ara,omitempty"`
+	RAC  int8  `json:"rac,omitempty"`
+	RAT  int8  `json:"rat,omitempty"`
+	MTE  int8  `json:"mte,omitempty"`
+	TTI  int8  `json:"tti,omitempty"`
+	TID  int32 `json:"tid,omitempty"`
+}
+
 type Cat021Model struct {
 	AircraftOperationStatus                        *AircraftOperationStatus               `json:"aircraftOperationStatus,omitempty"`
 	DataSourceIdentification                       *SourceIdentifier                      `json:"DataSourceIdentification,omitempty"`
@@ -224,10 +242,10 @@ type Cat021Model struct {
 	MOPSVersion                                    *MOPSVersion                           `json:"MPOSVersion,omitempty"`
 	MetInformation                                 string                                 `json:"MetInformation,omitempty"`
 	RollAngle                                      float64                                `json:"RollAngle,omitempty"`
-	ModeSMBData                                    string                                 `json:"ModeSMBData,omitempty"`
-	ACASResolutionAdvisoryReport                   string                                 `json:"ACASResolutionAdvisoryReport,omitempty"`
+	ModeSMBData                                    *ModeSMBData                           `json:"ModeSMBData,omitempty"`
+	ACASResolutionAdvisoryReport                   *ACASResolutionAdvisoryReport          `json:"ACASResolutionAdvisoryReport,omitempty"`
 	SurfaceCapabilitiesAndCharacteristic           *SurfaceCapabilitiesAndCharacteristics `json:"surfacecapabilitiesAndCharacteristics,omitempty"`
-	ReceiverID                                     string                                 `json:"ReceiverID,omitempty"`
+	ReceiverID                                     uint8                                  `json:"ReceiverID,omitempty"`
 }
 
 func (data *Cat021Model) write(rec goasterix.Record) {
@@ -388,11 +406,17 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 		case 38:
 			data.MessageAmplitude = goasterix.TwoComplement16(8, uint16(item.Fixed.Data[0]))
 		case 39:
-			// Do stuff
+			var payload []byte
+			copy(payload[:], item.Repetitive.Payload()[:])
+			tmp := getModeSMBData(payload)
+			data.ModeSMBData = tmp
 		case 40:
-			// Do stuff
+			var payload [7]byte
+			copy(payload[:], item.Fixed.Data[:])
+			tmp := getACASResolutionAdvisoryReport(payload)
+			data.ACASResolutionAdvisoryReport = tmp
 		case 41:
-			// Do stuff
+			data.ReceiverID = uint8(item.Fixed.Data[0])
 		case 42:
 			// Do stuff
 		case 48:
@@ -1061,6 +1085,34 @@ func getSurfaceCapabilitiesAndCharacteristics(data []byte) *SurfaceCapabilitiesA
 	}
 
 	return tmpSCAC
+}
+
+func getModeSMBData(data []byte) *ModeSMBData {
+	modesmbdata := new(ModeSMBData)
+
+	modesmbdata.REP = int8(data[0])
+
+	modesmbdata.MB = hex.EncodeToString(data[1:8])
+
+	modesmbdata.BDS1 = int8(data[8]&0xF0)>>BYTESIZE - 4
+
+	modesmbdata.BDS2 = int8(data[8] & 0x0F)
+
+	return modesmbdata
+}
+
+func getACASResolutionAdvisoryReport(data [7]byte) *ACASResolutionAdvisoryReport {
+	tmpAcas := new(ACASResolutionAdvisoryReport)
+	tmpAcas.TYP = int8(data[0]&0xF8) >> 3
+	tmpAcas.STYP = int8(data[0] & 0x07)
+	tmpAcas.ARA = int16(data[1])<<BYTESIZE - 2 + int16(data[2]&0xFA)>>2
+	tmpAcas.RAC = int8(data[2]&0x03)<<2 + int8(data[3]&0xC0)>>BYTESIZE - 2
+	tmpAcas.RAT = int8(data[3]&0x02)>>BYTESIZE - 3
+	tmpAcas.MTE = int8(data[3]&0x10)>>BYTESIZE - 4
+	tmpAcas.TTI = int8(data[3]&0x0C) >> 2
+	tmpAcas.TID = int32(data[3]&0x03)<<3*BYTESIZE + int32(data[4])<<2*BYTESIZE + int32(data[5])<<BYTESIZE + int32(data[6])
+
+	return tmpAcas
 }
 
 func isFieldExtention(data byte) bool {
