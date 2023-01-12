@@ -419,10 +419,6 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			data.ReceiverID = uint8(item.Fixed.Data[0])
 		case 42:
 			// Do stuff
-		case 48:
-			// Do stuff
-		case 49:
-			// Do stuff
 		}
 	}
 }
