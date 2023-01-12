@@ -2,7 +2,6 @@ package transform
 
 import (
 	"encoding/hex"
-	"errors"
 	"math"
 	"strings"
 
@@ -12,8 +11,6 @@ import (
 const (
 	BYTESIZE = 8
 )
-
-var ErrTypeUnknown021 = errors.New("[ASTERIX Error CAT021] Message TYPE Unknown")
 
 type WGS84Coordinates struct {
 	Latitude  float32 `json:"latitude,omitempty"`
