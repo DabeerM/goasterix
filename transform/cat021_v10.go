@@ -173,47 +173,61 @@ type AircraftOperationStatus struct {
 	SA      string `json:"sa,omitempty"`
 }
 
+type FirstExtensionSCC struct {
+	LW LengthWidth        `json:"lw,omitempty"`
+	FX *FirstExtensionSCC `json:"firstextension,omitempty"`
+}
+type SurfaceCapabilitiesAndCharacteristics struct {
+	POA   string             `json:"poa,omitempty"`
+	CDTIS string             `json:"cdtis,omitempty"`
+	B2Low string             `json:"b2low,omitempty"`
+	RAS   string             `json:"ras,omitempty"`
+	IDENT string             `json:"ident,omitempty"`
+	FX    *FirstExtensionSCC `json:"firstextension,omitempty"`
+}
+
 type Cat021Model struct {
-	AircraftOperationStatus                        *AircraftOperationStatus `json:"aircraftOperationStatus,omitempty"`
-	DataSourceIdentification                       *SourceIdentifier        `json:"DataSourceIdentification,omitempty"`
-	ServiceIdentification                          byte                     `json:"ServiceIdentification,omitempty"`
-	ServiceManagement                              float32                  `json:"ServiceManagement,omitempty"`
-	EmitterCategory                                string                   `json:"EmitterCategory,omitempty"`
-	TargetReportDescriptor                         *TargetReportDescriptor  `json:"TargetReportDescriptor,omitempty"`
-	Mode3ACode                                     *Mode3ACodeInOctal       `json:"Mode3ACode,omitempty"`
-	TimeOfApplicabilityForPosition                 float64                  `json:"timeOfApplicabilityForPosition,omitempty"`
-	TimeOfApplicabilityForVelocity                 float64                  `json:"timeOfApplicabilityForVelocity,omitempty"`
-	TimeOfMessageReceptionForPosition              float64                  `json:"TimeOfMessageReceptionForPosition,omitempty"`
-	TimeOfMessageReceptionForPositionHighPrecision *TimeOfDayHighPrecision  `json:"TimeOfMessageReceptionForPositionHighPrecision,omitempty"`
-	TimeOfMessageReceptionForVelocity              float64                  `json:"TimeOfMessageReceptionForVelocity,omitempty"`
-	TimeOfMessageReceptionForVelocityHighPrecision *TimeOfDayHighPrecision  `json:"TimeOfMessageReceptionForVelocityHighPrecision,omitempty"`
-	TimeOfReportTransmission                       float64                  `json:"TimeOfReportTransmission,omitempty"`
-	TargetAddress                                  string                   `json:"TargetAddress,omitempty"`
-	QualityIndicators                              *QualityIndicators       `json:"QualityIndicators,omitempty"`
-	TrajectoryIntent                               string                   `json:"TrajectoryIntent,omitempty"`
-	PositionWGS84                                  *WGS84Coordinates        `json:"PositionWGS84,omitempty"`
-	PositionWGS84HighRes                           *WGS84Coordinates        `json:"PositionWGS84HighRes,omitempty"`
-	MessageAmplitude                               int64                    `json:"MessageAmplitude,omitempty"`
-	GeometricHeight                                *GeometricHeight         `json:"GeometricHeight,omitempty"`
-	FlightLevel                                    float32                  `json:"FlightLevel,omitempty"`
-	SelectedAltitude                               *SelectedAltitude        `json:"SelectedAltitude,omitempty"`
-	FinalStateSelectedAltitude                     *StateSelectedAltitude   `json:"FinalStateSelectedAltitude,omitempty"`
-	AirSpeed                                       *AirSpeed                `json:"AirSpeed,omitempty"`
-	TrueAirSpeed                                   *TrueAirSpeed            `json:"TrueAirSpeed,omitempty"`
-	MagneticHeading                                float64                  `json:"MagneticHeading,omitempty"`
-	BarometricVerticalRate                         *VerticalRate            `json:"BarometricVerticalRate,omitempty"`
-	GeometricVerticalRate                          float64                  `json:"GeometricVerticalRate,omitempty"`
-	AirborneGroundVector                           *AirborneGroundVector    `json:"AirborneGroundVector,omitempty"`
-	TrackNumber                                    uint16                   `json:"TrackNumber,omitempty"`
-	TrackAngleRate                                 float32                  `json:"TrackAngleRate,omitempty"`
-	TargetIdentification                           string                   `json:"TargetIdentification,omitempty"`
-	TargetStatus                                   *TargetStatus            `json:"TargetStatus,omitempty"`
-	MOPSVersion                                    *MOPSVersion             `json:"MPOSVersion,omitempty"`
-	MetInformation                                 string                   `json:"MetInformation,omitempty"`
-	RollAngle                                      float64                  `json:"RollAngle,omitempty"`
-	ModeSMBData                                    string                   `json:"ModeSMBData,omitempty"`
-	ACASResolutionAdvisoryReport                   string                   `json:"ACASResolutionAdvisoryReport,omitempty"`
-	ReceiverID                                     string                   `json:"ReceiverID,omitempty"`
+	AircraftOperationStatus                        *AircraftOperationStatus               `json:"aircraftOperationStatus,omitempty"`
+	DataSourceIdentification                       *SourceIdentifier                      `json:"DataSourceIdentification,omitempty"`
+	ServiceIdentification                          byte                                   `json:"ServiceIdentification,omitempty"`
+	ServiceManagement                              float32                                `json:"ServiceManagement,omitempty"`
+	EmitterCategory                                string                                 `json:"EmitterCategory,omitempty"`
+	TargetReportDescriptor                         *TargetReportDescriptor                `json:"TargetReportDescriptor,omitempty"`
+	Mode3ACode                                     *Mode3ACodeInOctal                     `json:"Mode3ACode,omitempty"`
+	TimeOfApplicabilityForPosition                 float64                                `json:"timeOfApplicabilityForPosition,omitempty"`
+	TimeOfApplicabilityForVelocity                 float64                                `json:"timeOfApplicabilityForVelocity,omitempty"`
+	TimeOfMessageReceptionForPosition              float64                                `json:"TimeOfMessageReceptionForPosition,omitempty"`
+	TimeOfMessageReceptionForPositionHighPrecision *TimeOfDayHighPrecision                `json:"TimeOfMessageReceptionForPositionHighPrecision,omitempty"`
+	TimeOfMessageReceptionForVelocity              float64                                `json:"TimeOfMessageReceptionForVelocity,omitempty"`
+	TimeOfMessageReceptionForVelocityHighPrecision *TimeOfDayHighPrecision                `json:"TimeOfMessageReceptionForVelocityHighPrecision,omitempty"`
+	TimeOfReportTransmission                       float64                                `json:"TimeOfReportTransmission,omitempty"`
+	TargetAddress                                  string                                 `json:"TargetAddress,omitempty"`
+	QualityIndicators                              *QualityIndicators                     `json:"QualityIndicators,omitempty"`
+	TrajectoryIntent                               string                                 `json:"TrajectoryIntent,omitempty"`
+	PositionWGS84                                  *WGS84Coordinates                      `json:"PositionWGS84,omitempty"`
+	PositionWGS84HighRes                           *WGS84Coordinates                      `json:"PositionWGS84HighRes,omitempty"`
+	MessageAmplitude                               int16                                  `json:"MessageAmplitude,omitempty"`
+	GeometricHeight                                *GeometricHeight                       `json:"GeometricHeight,omitempty"`
+	FlightLevel                                    float32                                `json:"FlightLevel,omitempty"`
+	SelectedAltitude                               *SelectedAltitude                      `json:"SelectedAltitude,omitempty"`
+	FinalStateSelectedAltitude                     *StateSelectedAltitude                 `json:"FinalStateSelectedAltitude,omitempty"`
+	AirSpeed                                       *AirSpeed                              `json:"AirSpeed,omitempty"`
+	TrueAirSpeed                                   *TrueAirSpeed                          `json:"TrueAirSpeed,omitempty"`
+	MagneticHeading                                float64                                `json:"MagneticHeading,omitempty"`
+	BarometricVerticalRate                         *VerticalRate                          `json:"BarometricVerticalRate,omitempty"`
+	GeometricVerticalRate                          float64                                `json:"GeometricVerticalRate,omitempty"`
+	AirborneGroundVector                           *AirborneGroundVector                  `json:"AirborneGroundVector,omitempty"`
+	TrackNumber                                    uint16                                 `json:"TrackNumber,omitempty"`
+	TrackAngleRate                                 float32                                `json:"TrackAngleRate,omitempty"`
+	TargetIdentification                           string                                 `json:"TargetIdentification,omitempty"`
+	TargetStatus                                   *TargetStatus                          `json:"TargetStatus,omitempty"`
+	MOPSVersion                                    *MOPSVersion                           `json:"MPOSVersion,omitempty"`
+	MetInformation                                 string                                 `json:"MetInformation,omitempty"`
+	RollAngle                                      float64                                `json:"RollAngle,omitempty"`
+	ModeSMBData                                    string                                 `json:"ModeSMBData,omitempty"`
+	ACASResolutionAdvisoryReport                   string                                 `json:"ACASResolutionAdvisoryReport,omitempty"`
+	SurfaceCapabilitiesAndCharacteristic           *SurfaceCapabilitiesAndCharacteristics `json:"surfacecapabilitiesAndCharacteristics,omitempty"`
+	ReceiverID                                     string                                 `json:"ReceiverID,omitempty"`
 }
 
 func (data *Cat021Model) write(rec goasterix.Record) {
@@ -276,7 +290,6 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			tmp, _ := timeOfDayHighPrecision(payload)
 			data.TimeOfMessageReceptionForPositionHighPrecision = &tmp
 		case 14:
-			// TODO: Check correctness
 			var payload [3]byte
 			copy(payload[:], item.Fixed.Data[:])
 			data.TimeOfMessageReceptionForVelocity, _ = timeOfDay(payload)
@@ -360,8 +373,8 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			data.FinalStateSelectedAltitude = getFinalSelectedAltitude(payload)
 		case 34:
 			// TODO: Implement Trajectory Intent
-			//tmp := getTrajectoryIntent(*item.Compound)
-			//data.TrajectoryIntent = &tmp
+			// tmp := getTrajectoryIntent(*item.Compound)
+			// data.TrajectoryIntent = &tmp
 		case 35:
 			data.ServiceManagement = float32(uint16(item.Fixed.Data[0])) * 0.5
 		case 36:
@@ -369,9 +382,11 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			copy(payload[:], item.Fixed.Data[:])
 			data.AircraftOperationStatus = getAircraftOperationalStatus(payload)
 		case 37:
-			// Do stuff
+			var payload []byte
+			copy(payload[:], item.Fixed.Data[:])
+			data.SurfaceCapabilitiesAndCharacteristic = getSurfaceCapabilitiesAndCharacteristics(payload)
 		case 38:
-			// Do stuff
+			data.MessageAmplitude = goasterix.TwoComplement16(8, uint16(item.Fixed.Data[0]))
 		case 39:
 			// Do stuff
 		case 40:
@@ -379,16 +394,6 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 		case 41:
 			// Do stuff
 		case 42:
-			// Do stuff
-		case 43:
-			// Do stuff
-		case 44:
-			// Do stuff
-		case 45:
-			// Do stuff
-		case 46:
-			// Do stuff
-		case 47:
 			// Do stuff
 		case 48:
 			// Do stuff
@@ -1009,6 +1014,53 @@ func getAircraftOperationalStatus(data [1]byte) *AircraftOperationStatus {
 	}
 
 	return tmpAOS
+}
+
+func getSurfaceCapabilitiesAndCharacteristics(data []byte) *SurfaceCapabilitiesAndCharacteristics {
+	tmpSCAC := new(SurfaceCapabilitiesAndCharacteristics)
+
+	if uint16(data[0]&0x20)>>5 == 0 {
+		tmpSCAC.POA = "Position transmitted is not ADS-B position reference point"
+	} else {
+		tmpSCAC.POA = "Position transmitted is the ADS-B position reference point"
+	}
+
+	if uint16(data[0]&0x20)>>5 == 0 {
+		tmpSCAC.CDTIS = "CDTI not operationa"
+	} else {
+		tmpSCAC.CDTIS = "CDTI operational"
+	}
+
+	if uint16(data[0]&0x20)>>5 == 0 {
+		tmpSCAC.B2Low = ">= 70 Watts"
+	} else {
+		tmpSCAC.B2Low = "< 70 Watts"
+	}
+
+	if uint16(data[0]&0x20)>>5 == 0 {
+		tmpSCAC.RAS = "Aircraft not receiving ATC-services"
+	} else {
+		tmpSCAC.RAS = "Aircraft receiving ATC services"
+	}
+
+	if uint16(data[0]&0x20)>>5 == 0 {
+		tmpSCAC.IDENT = "IDENT switch not active"
+	} else {
+		tmpSCAC.IDENT = "IDENT switch active"
+	}
+
+	addAdditionalFieldExtensions := (uint16(data[0]&0x01) == 1)
+	i := 1
+	for addAdditionalFieldExtensions && i < len(data) {
+		tmpFX := new(FirstExtensionSCC)
+
+		tmpFX.LW = TableLWV1[uint32(data[i]&0xF0)>>BYTESIZE-4]
+
+		addAdditionalFieldExtensions = (uint16(data[i]&0x01) == 1)
+		i += 1
+	}
+
+	return tmpSCAC
 }
 
 func isFieldExtention(data byte) bool {
