@@ -59,7 +59,7 @@ type TargetReportDescriptor struct {
 	FX  *FirstExtensionTRD `json:"fx,omitempty"`
 }
 
-type NICVersion2OrHigher struct {
+type NIC_Version2OrHigher struct {
 	NIC int
 	AB  string
 	AC  string
@@ -69,7 +69,7 @@ type PIC struct {
 	IntegrityContainmentBound float64
 	NUCp                      int
 	NIC_DO260A                string
-	NIC_Version2OrHigher      *NICVersion2OrHigher
+	NIC_Version2OrHigher      *NIC_Version2OrHigher
 }
 type ThirdExtensionQI struct {
 	PIC *PIC `json:"pic,omitempty"`
@@ -1114,7 +1114,7 @@ func isFieldExtention(data byte) bool {
 
 func getPIC(data int) *PIC {
 	tmpPIC := new(PIC)
-	tmpNICV2 := new(NICVersion2OrHigher)
+	tmpNICV2 := new(NIC_Version2OrHigher)
 	switch data {
 	case 0:
 		tmpPIC.NUCp = 0
