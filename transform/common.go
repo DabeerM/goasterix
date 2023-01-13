@@ -36,7 +36,7 @@ func sacSic(data [2]byte) (src SourceIdentifier, err error) {
 
 // TODO: Check if it applies for similar functions. If so, refactor name
 // timeOfDay returns a float64 in second (1 bit = 1/128 s)
-// Absolute time stamping expressed as Co-ordinated Universal Time (UTC).
+// Absolute time stamping expressed as Coordinated Universal Time (UTC).
 // The time information, coded in three octets, shall reflect the exact time of an event,
 // expressed as a number of 1/128 s elapsed since last midnight.
 // The time of day value is reset to 0 each day at midnight.

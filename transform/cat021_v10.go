@@ -277,7 +277,7 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			var payload []byte
 			copy(payload[:], item.Fixed.Data[:])
 			tmp := wgs84Coordinates(payload)
-			data.PositionWGS84 = &tmp
+			data.PositionWGS84HighRes = &tmp
 		case 8:
 			var payload [3]byte
 			copy(payload[:], item.Fixed.Data[:])
