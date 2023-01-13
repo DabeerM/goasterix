@@ -255,7 +255,7 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			data.DataSourceIdentification = &tmp
 		case 2:
 			// TODO: Write unit tests
-			tmp := getTargetReportDescriptor(*item.Compound)
+			tmp := targetReportDescriptor(*item.Compound)
 			data.TargetReportDescriptor = &tmp
 		case 3:
 			var payload [2]byte
@@ -285,12 +285,12 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 		case 9:
 			var payload [2]byte
 			copy(payload[:], item.Fixed.Data[:])
-			tmp := getAirSpeed(payload)
+			tmp := airSpeed(payload)
 			data.AirSpeed = &tmp
 		case 10:
 			var payload [2]byte
 			copy(payload[:], item.Fixed.Data[:])
-			tmp := getTrueAirSpeed(payload)
+			tmp := trueAirSpeed(payload)
 			data.TrueAirSpeed = &tmp
 		case 11:
 			data.TargetAddress = strings.ToUpper(hex.EncodeToString(item.Fixed.Data))
@@ -317,23 +317,23 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 		case 16:
 			var payload [2]byte
 			copy(payload[:], item.Fixed.Data[:])
-			tmp := getGeometricHeight(payload)
+			tmp := geometricHeight(payload)
 			data.GeometricHeight = &tmp
 		case 17:
-			tmp := getQualityIndicators(*item.Compound)
+			tmp := qualityIndicators(*item.Compound)
 			data.QualityIndicators = &tmp
 		case 18:
-			tmp := getMOPS(*item.Compound)
+			tmp := mOPS(*item.Compound)
 			data.MOPSVersion = &tmp
 		case 19:
 			var payload [2]byte
 			copy(payload[:], item.Fixed.Data[:])
-			tmp := getMode3ACode(payload)
+			tmp := mode3ACodeCAT021(payload)
 			data.Mode3ACode = tmp
 		case 20:
 			var payload [2]byte
 			copy(payload[:], item.Fixed.Data[:])
-			tmp := getRollAngle(payload)
+			tmp := rollAngle(payload)
 			data.RollAngle = tmp
 		case 21:
 			var payload [2]byte
@@ -345,24 +345,24 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 		case 23:
 			var payload []byte
 			copy(payload, item.Fixed.Data[:])
-			tmp := getTargetStatus(payload)
+			tmp := targetStatus(payload)
 			data.TargetStatus = tmp
 		case 24:
 			var payload [2]byte
 			copy(payload[:], item.Fixed.Data[:])
-			data.BarometricVerticalRate = getVerticalRate(payload)
+			data.BarometricVerticalRate = verticalRate(payload)
 		case 25:
 			var payload [2]byte
 			copy(payload[:], item.Fixed.Data[:])
-			data.BarometricVerticalRate = getVerticalRate(payload)
+			data.BarometricVerticalRate = verticalRate(payload)
 		case 26:
 			var payload [4]byte
 			copy(payload[:], item.Fixed.Data[:])
-			data.AirborneGroundVector = getAirborneGroundVector(payload)
+			data.AirborneGroundVector = airborneGroundVector(payload)
 		case 27:
 			var payload [2]byte
 			copy(payload[:], item.Fixed.Data[:])
-			data.TrackAngleRate = getTrackAngleRate(payload)
+			data.TrackAngleRate = trackAngleRate(payload)
 		case 28:
 			var payload [3]byte
 			copy(payload[:], item.Fixed.Data[:])
@@ -375,17 +375,17 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 		case 30:
 			var payload [1]byte
 			copy(payload[:], item.Fixed.Data[:])
-			data.EmitterCategory = getEmitterCategory(payload)
+			data.EmitterCategory = emitterCategory(payload)
 		case 31:
 			// TODO: Implement Met Weather after clarrification with Eurocontrol
 		case 32:
 			var payload [2]byte
 			copy(payload[:], item.Fixed.Data[:])
-			data.SelectedAltitude = getSelectedAltitude(payload)
+			data.SelectedAltitude = selectedAltitude(payload)
 		case 33:
 			var payload [2]byte
 			copy(payload[:], item.Fixed.Data[:])
-			data.FinalStateSelectedAltitude = getFinalSelectedAltitude(payload)
+			data.FinalStateSelectedAltitude = finalSelectedAltitude(payload)
 		case 34:
 			// TODO: Implement Trajectory Intent
 			// tmp := getTrajectoryIntent(*item.Compound)
@@ -395,22 +395,22 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 		case 36:
 			var payload [1]byte
 			copy(payload[:], item.Fixed.Data[:])
-			data.AircraftOperationStatus = getAircraftOperationalStatus(payload)
+			data.AircraftOperationStatus = aircraftOperationalStatus(payload)
 		case 37:
 			var payload []byte
 			copy(payload[:], item.Fixed.Data[:])
-			data.SurfaceCapabilitiesAndCharacteristic = getSurfaceCapabilitiesAndCharacteristics(payload)
+			data.SurfaceCapabilitiesAndCharacteristic = surfaceCapabilitiesAndCharacteristics(payload)
 		case 38:
 			data.MessageAmplitude = goasterix.TwoComplement16(8, uint16(item.Fixed.Data[0]))
 		case 39:
 			var payload []byte
 			copy(payload[:], item.Repetitive.Payload()[:])
-			tmp := getModeSMBData(payload)
+			tmp := modeSMBDataCAT021(payload)
 			data.ModeSMBData = tmp
 		case 40:
 			var payload [7]byte
 			copy(payload[:], item.Fixed.Data[:])
-			tmp := getACASResolutionAdvisoryReport(payload)
+			tmp := aCASResolutionAdvisoryReport(payload)
 			data.ACASResolutionAdvisoryReport = tmp
 		case 41:
 			data.ReceiverID = uint8(item.Fixed.Data[0])
@@ -422,7 +422,7 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 
 // TODO: Refactor to cover for arbitrary number of extensions (currently only covers
 //       two as that's explicitly in the spec)
-func getTargetReportDescriptor(cp goasterix.Compound) TargetReportDescriptor {
+func targetReportDescriptor(cp goasterix.Compound) TargetReportDescriptor {
 	trd := new(TargetReportDescriptor)
 
 	tmp := cp.Primary[0]
@@ -564,7 +564,7 @@ func getTargetReportDescriptor(cp goasterix.Compound) TargetReportDescriptor {
 	return *trd
 }
 
-func getQualityIndicators(cp goasterix.Compound) QualityIndicators {
+func qualityIndicators(cp goasterix.Compound) QualityIndicators {
 	qi := new(QualityIndicators)
 
 	tmp := cp.Primary[0]
@@ -645,7 +645,7 @@ func wgs84Coordinates(data []byte) WGS84Coordinates {
 	return pos
 }
 
-func getAirSpeed(data [2]byte) AirSpeed {
+func airSpeed(data [2]byte) AirSpeed {
 	var speed AirSpeed
 
 	tmp := data[0]
@@ -662,7 +662,7 @@ func getAirSpeed(data [2]byte) AirSpeed {
 	return speed
 }
 
-func getTrueAirSpeed(data [2]byte) TrueAirSpeed {
+func trueAirSpeed(data [2]byte) TrueAirSpeed {
 	return TrueAirSpeed{
 		RE:    int(data[0] & 0x80),
 		Speed: int16(uint32(data[0]&0x7F)<<BYTESIZE + uint32(data[1]&0xFF)),
@@ -670,7 +670,7 @@ func getTrueAirSpeed(data [2]byte) TrueAirSpeed {
 }
 
 // TODO: Double-check this...
-func getGeometricHeight(data [2]byte) GeometricHeight {
+func geometricHeight(data [2]byte) GeometricHeight {
 	tmpHeight := goasterix.TwoComplement16(16, uint16(data[0])<<BYTESIZE+uint16(data[1]))
 	greaterThan := false
 	int16Max := int16(32767)
@@ -683,7 +683,7 @@ func getGeometricHeight(data [2]byte) GeometricHeight {
 	}
 }
 
-func getMOPS(cp goasterix.Compound) MOPSVersion {
+func mOPS(cp goasterix.Compound) MOPSVersion {
 	mops := new(MOPSVersion)
 
 	tmp := cp.Primary[0]
@@ -721,7 +721,7 @@ func getMOPS(cp goasterix.Compound) MOPSVersion {
 	return *mops
 }
 
-func getMode3ACode(data [2]byte) *Mode3ACodeInOctal {
+func mode3ACodeCAT021(data [2]byte) *Mode3ACodeInOctal {
 	tmpMode3ACode := new(Mode3ACodeInOctal)
 	tmpData := data
 
@@ -742,7 +742,7 @@ func getMode3ACode(data [2]byte) *Mode3ACodeInOctal {
 
 }
 
-func getTargetStatus(data []byte) *TargetStatus {
+func targetStatus(data []byte) *TargetStatus {
 	ts := new(TargetStatus)
 	tmp := data[0]
 
@@ -795,14 +795,14 @@ func getTargetStatus(data []byte) *TargetStatus {
 	return ts
 }
 
-func getRollAngle(data [2]byte) float64 {
+func rollAngle(data [2]byte) float64 {
 	lsbResolution := 0.01
 	sum := uint32(data[0])<<BYTESIZE + uint32(data[1])
 	tmpRoll := goasterix.TwoComplement32(16, sum)
 	return float64(tmpRoll) * float64(lsbResolution)
 }
 
-func getVerticalRate(data [2]byte) *VerticalRate {
+func verticalRate(data [2]byte) *VerticalRate {
 	baroRate := new(VerticalRate)
 
 	if int16(data[0])&0xF0>>BYTESIZE-1 == 0 {
@@ -816,7 +816,7 @@ func getVerticalRate(data [2]byte) *VerticalRate {
 	return baroRate
 }
 
-func getAirborneGroundVector(data [4]byte) *AirborneGroundVector {
+func airborneGroundVector(data [4]byte) *AirborneGroundVector {
 	agv := new(AirborneGroundVector)
 
 	if data[0]&0x80>>3 == 0 {
@@ -833,11 +833,11 @@ func getAirborneGroundVector(data [4]byte) *AirborneGroundVector {
 	return agv
 }
 
-func getTrackAngleRate(data [2]byte) float32 {
+func trackAngleRate(data [2]byte) float32 {
 	return float32(int16(data[0])&0x03<<BYTESIZE+int16(data[1])&0xFF) * float32(1.0/32)
 }
 
-func getEmitterCategory(data [1]byte) string {
+func emitterCategory(data [1]byte) string {
 	emitterCategoryStr := ""
 
 	switch int8(data[0]) {
@@ -896,7 +896,7 @@ func getEmitterCategory(data [1]byte) string {
 	return emitterCategoryStr
 }
 
-func getSelectedAltitude(data [2]byte) *SelectedAltitude {
+func selectedAltitude(data [2]byte) *SelectedAltitude {
 	tmp := new(SelectedAltitude)
 	if data[0]&0x80 != 0 {
 		tmp.SAS = "source_information_provided"
@@ -919,7 +919,7 @@ func getSelectedAltitude(data [2]byte) *SelectedAltitude {
 	return tmp
 }
 
-func getFinalSelectedAltitude(data [2]byte) *StateSelectedAltitude {
+func finalSelectedAltitude(data [2]byte) *StateSelectedAltitude {
 	tmp := new(StateSelectedAltitude)
 	if data[0]&0x80 != 0 {
 		tmp.MV = "manage_vertical_mode_active"
@@ -943,7 +943,7 @@ func getFinalSelectedAltitude(data [2]byte) *StateSelectedAltitude {
 }
 
 /*
-func getTrajectoryIntent(cp goasterix.Compound) *TrajectoryIntent {
+func trajectoryIntent(cp goasterix.Compound) *TrajectoryIntent {
 
 	tmpTI := new(TrajectoryIntent)
 	subfieldPositionInCompound := 0
@@ -979,7 +979,7 @@ func getTrajectoryIntent(cp goasterix.Compound) *TrajectoryIntent {
 }
 */
 
-func getAircraftOperationalStatus(data [1]byte) *AircraftOperationStatus {
+func aircraftOperationalStatus(data [1]byte) *AircraftOperationStatus {
 	tmp := data[0]
 	tmpAOS := new(AircraftOperationStatus)
 
@@ -1033,7 +1033,7 @@ func getAircraftOperationalStatus(data [1]byte) *AircraftOperationStatus {
 	return tmpAOS
 }
 
-func getSurfaceCapabilitiesAndCharacteristics(data []byte) *SurfaceCapabilitiesAndCharacteristics {
+func surfaceCapabilitiesAndCharacteristics(data []byte) *SurfaceCapabilitiesAndCharacteristics {
 	tmpSCAC := new(SurfaceCapabilitiesAndCharacteristics)
 
 	if uint16(data[0]&0x20)>>5 == 0 {
@@ -1080,7 +1080,7 @@ func getSurfaceCapabilitiesAndCharacteristics(data []byte) *SurfaceCapabilitiesA
 	return tmpSCAC
 }
 
-func getModeSMBData(data []byte) *ModeSMBData {
+func modeSMBDataCAT021(data []byte) *ModeSMBData {
 	modesmbdata := new(ModeSMBData)
 
 	modesmbdata.REP = int8(data[0])
@@ -1094,7 +1094,7 @@ func getModeSMBData(data []byte) *ModeSMBData {
 	return modesmbdata
 }
 
-func getACASResolutionAdvisoryReport(data [7]byte) *ACASResolutionAdvisoryReport {
+func aCASResolutionAdvisoryReport(data [7]byte) *ACASResolutionAdvisoryReport {
 	tmpAcas := new(ACASResolutionAdvisoryReport)
 	tmpAcas.TYP = int8(data[0]&0xF8) >> 3
 	tmpAcas.STYP = int8(data[0] & 0x07)

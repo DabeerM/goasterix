@@ -64,7 +64,7 @@ func Test_BasicGeometricHeight(t *testing.T){
 	}
 
 	// Act
-	res := getGeometricHeight(input)
+	res := geometricHeight(input)
 
 	// Assert
 	if res != output {
@@ -83,7 +83,7 @@ func Test_MaxGeometricHeight(t *testing.T){
 	}
 
 	// Act
-	res := getGeometricHeight(input)
+	res := geometricHeight(input)
 
 	// Assert
 	if res != output {
@@ -102,7 +102,7 @@ func Test_MinGeometricHeight(t *testing.T){
 	}
 
 	// Act
-	res := getGeometricHeight(input)
+	res := geometricHeight(input)
 
 	// Assert
 	if res != output {
@@ -121,7 +121,7 @@ func Test_GreaterThanGeometricHeight(t *testing.T){
 	}
 
 	// Act
-	res := getGeometricHeight(input)
+	res := geometricHeight(input)
 
 	// Assert
 	if res != output {
