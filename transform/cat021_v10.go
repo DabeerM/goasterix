@@ -669,16 +669,18 @@ func trueAirSpeed(data [2]byte) TrueAirSpeed {
 	}
 }
 
-// TODO: Double-check this...
 func geometricHeight(data [2]byte) GeometricHeight {
 	tmpHeight := goasterix.TwoComplement16(16, uint16(data[0])<<BYTESIZE+uint16(data[1]))
+	
 	greaterThan := false
 	int16Max := int16(32767)
 	if tmpHeight == int16Max {
 		greaterThan = true
 	}
+
+	LSB := 6.25
 	return GeometricHeight{
-		Height:      float64(tmpHeight) * 6.25,
+		Height:      float64(tmpHeight) * LSB,
 		GreaterThan: greaterThan,
 	}
 }
