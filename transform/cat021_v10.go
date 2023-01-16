@@ -186,7 +186,7 @@ type SurfaceCapabilitiesAndCharacteristics struct {
 type ModeSMBData struct {
 	REP  int8   `json:"rep,omitempty"`
 	MB   string `json:"mb,omitempty"`
-	BDS1 int8   `json:"bds1,omitempty"`
+	BDS1 int16   `json:"bds1,omitempty"`
 	BDS2 int8   `json:"bds2,omitempty"`
 }
 
@@ -194,9 +194,9 @@ type ACASResolutionAdvisoryReport struct {
 	TYP  int8  `json:"typ,omitempty"`
 	STYP int8  `json:"styp,omitempty"`
 	ARA  int16 `json:"ara,omitempty"`
-	RAC  int8  `json:"rac,omitempty"`
-	RAT  int8  `json:"rat,omitempty"`
-	MTE  int8  `json:"mte,omitempty"`
+	RAC  int16  `json:"rac,omitempty"`
+	RAT  int16  `json:"rat,omitempty"`
+	MTE  int16  `json:"mte,omitempty"`
 	TTI  int8  `json:"tti,omitempty"`
 	TID  int32 `json:"tid,omitempty"`
 }
@@ -1087,7 +1087,7 @@ func modeSMBDataCAT021(data []byte) *ModeSMBData {
 
 	modesmbdata.MB = hex.EncodeToString(data[1:8])
 
-	modesmbdata.BDS1 = int8(data[8]&0xF0)>>BYTESIZE - 4
+	modesmbdata.BDS1 = int16(data[8]&0xF0)>>BYTESIZE - 4
 
 	modesmbdata.BDS2 = int8(data[8] & 0x0F)
 
@@ -1099,9 +1099,9 @@ func aCASResolutionAdvisoryReport(data [7]byte) *ACASResolutionAdvisoryReport {
 	tmpAcas.TYP = int8(data[0]&0xF8) >> 3
 	tmpAcas.STYP = int8(data[0] & 0x07)
 	tmpAcas.ARA = int16(data[1])<<BYTESIZE - 2 + int16(data[2]&0xFA)>>2
-	tmpAcas.RAC = int8(data[2]&0x03)<<2 + int8(data[3]&0xC0)>>BYTESIZE - 2
-	tmpAcas.RAT = int8(data[3]&0x02)>>BYTESIZE - 3
-	tmpAcas.MTE = int8(data[3]&0x10)>>BYTESIZE - 4
+	tmpAcas.RAC = int16(data[2]&0x03)<<2 + int16(data[3]&0xC0)>>BYTESIZE - 2
+	tmpAcas.RAT = int16(data[3]&0x02)>>BYTESIZE - 3
+	tmpAcas.MTE = int16(data[3]&0x10)>>BYTESIZE - 4
 	tmpAcas.TTI = int8(data[3]&0x0C) >> 2
 	tmpAcas.TID = int32(data[3]&0x03)<<3*BYTESIZE + int32(data[4])<<2*BYTESIZE + int32(data[5])<<BYTESIZE + int32(data[6])
 
