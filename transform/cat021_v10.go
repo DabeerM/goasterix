@@ -424,7 +424,8 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 func targetReportDescriptor(cp goasterix.Compound) TargetReportDescriptor {
 	trd := new(TargetReportDescriptor)
 
-	tmp := cp.Primary[0]
+	tmpList := cp.Payload()
+	tmp := tmpList[0]
 
 	switch tmp & 0xE0 >> 5 {
 	case 0:
@@ -466,8 +467,7 @@ func targetReportDescriptor(cp goasterix.Compound) TargetReportDescriptor {
 		fx1 := new(FirstExtensionTRD)
 
 		fstItem := 0
-		fstByte := 0
-		tmp = cp.Secondary[fstItem].Payload()[fstByte] //?
+		tmp = tmpList[fstItem] //?
 
 		if tmp&0x80 == 0 {
 			fx1.DCR = "No differential correction"
@@ -514,7 +514,7 @@ func targetReportDescriptor(cp goasterix.Compound) TargetReportDescriptor {
 			fx2 := new(SecondExtensionTRD)
 
 			sndItem := 0
-			tmp = cp.Secondary[sndItem].Payload()[fstByte] //?
+			tmp = tmpList[sndItem] //?
 
 			if tmp&0x40 == 0 {
 				fx2.LLC = "default"
