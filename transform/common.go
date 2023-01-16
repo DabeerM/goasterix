@@ -121,3 +121,15 @@ func modeSIdentification(data [6]byte) (string, error) {
 
 	return s, err
 }
+
+// checkEqualLatLong returns a boolean (whether two WGS84 supplied coordinates are equal +- epsilon).
+func checkEqualLatLong(resultCoordinates WGS84Coordinates, actualCoordinates WGS84Coordinates, epsilon float64) bool {
+	compareLatitudes := equalWithinErrorBounds(float64(resultCoordinates.Latitude), float64(actualCoordinates.Latitude), epsilon)
+	compareLongitudes := equalWithinErrorBounds(float64(resultCoordinates.Longitude), float64(actualCoordinates.Longitude), epsilon)
+	return compareLatitudes && compareLongitudes
+}
+
+// equalWithinErrorBounds returns a boolean (whether two float64 values are equal +- epsilon/error).
+func equalWithinErrorBounds(actualValue float64, targetValue float64, epsilon float64) bool {
+	return math.Abs(targetValue-actualValue) < epsilon
+}

@@ -1,19 +1,8 @@
 package transform
 
 import (
-	"math"
 	"testing"
 )
-
-func equalWithinErrorBounds(actualValue float64, targetValue float64, epsilon float64) bool {
-	return math.Abs(targetValue-actualValue) < epsilon
-}
-
-func checkEqualLatLong(resultCoordinates WGS84Coordinates, actualCoordinates WGS84Coordinates, epsilon float64) bool {
-	compareLatitudes := equalWithinErrorBounds(float64(resultCoordinates.Latitude), float64(actualCoordinates.Latitude), epsilon)
-	compareLongitudes := equalWithinErrorBounds(float64(resultCoordinates.Longitude), float64(actualCoordinates.Longitude), epsilon)
-	return compareLatitudes && compareLongitudes
-}
 
 func Test_wgs84Coordinates_LowPrecision(t *testing.T) {
 	// Arrange
@@ -55,11 +44,11 @@ func Test_wgs84Coordinates_HighPrecision(t *testing.T) {
 	}
 }
 
-func Test_BasicGeometricHeight(t *testing.T){
-	// Arrange 
+func Test_BasicGeometricHeight(t *testing.T) {
+	// Arrange
 	input := [2]byte{0x09, 0x60}
 	output := GeometricHeight{
-		Height: 15000.0,
+		Height:      15000.0,
 		GreaterThan: false,
 	}
 
@@ -74,11 +63,11 @@ func Test_BasicGeometricHeight(t *testing.T){
 	}
 }
 
-func Test_MaxGeometricHeight(t *testing.T){
-	// Arrange 
+func Test_MaxGeometricHeight(t *testing.T) {
+	// Arrange
 	input := [2]byte{0x5D, 0xC0}
 	output := GeometricHeight{
-		Height: 150000.0,
+		Height:      150000.0,
 		GreaterThan: false,
 	}
 
@@ -93,11 +82,11 @@ func Test_MaxGeometricHeight(t *testing.T){
 	}
 }
 
-func Test_MinGeometricHeight(t *testing.T){
-	// Arrange 
+func Test_MinGeometricHeight(t *testing.T) {
+	// Arrange
 	input := [2]byte{0xFF, 0x10}
 	output := GeometricHeight{
-		Height: -1500.0,
+		Height:      -1500.0,
 		GreaterThan: false,
 	}
 
@@ -112,11 +101,11 @@ func Test_MinGeometricHeight(t *testing.T){
 	}
 }
 
-func Test_GreaterThanGeometricHeight(t *testing.T){
-	// Arrange 
+func Test_GreaterThanGeometricHeight(t *testing.T) {
+	// Arrange
 	input := [2]byte{0x7F, 0xFF}
 	output := GeometricHeight{
-		Height: 204793.75,
+		Height:      204793.75,
 		GreaterThan: true,
 	}
 
