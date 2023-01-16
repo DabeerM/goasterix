@@ -60,16 +60,16 @@ type TargetReportDescriptor struct {
 }
 
 type NIC_Version2OrHigher struct {
-	NIC int
-	AB  string
-	AC  string
+	NIC int    `json:"nic,omitempty"`
+	AB  string `json:"ab,omitempty"`
+	AC  string `json:"ac,omitempty"`
 }
 type PIC struct {
-	PIC                       int
-	IntegrityContainmentBound float64
-	NUCp                      int
-	NIC_DO260A                string
-	NIC_Version2OrHigher      *NIC_Version2OrHigher
+	PIC                       int                   `json:"pic,omitempty"`
+	IntegrityContainmentBound float64               `json:"integritycontainmentbound,omitempty"`
+	NUCp                      int                   `json:"nucp,omitempty"`
+	NIC_DO260A                string                `json:"nic_do260a,omitempty"`
+	NIC_Version2OrHigher      *NIC_Version2OrHigher `json:"nic_version2orhigher,omitempty"`
 }
 type ThirdExtensionQI struct {
 	PIC *PIC `json:"pic,omitempty"`
@@ -186,7 +186,7 @@ type SurfaceCapabilitiesAndCharacteristics struct {
 type ModeSMBData struct {
 	REP  int8   `json:"rep,omitempty"`
 	MB   string `json:"mb,omitempty"`
-	BDS1 int16   `json:"bds1,omitempty"`
+	BDS1 int16  `json:"bds1,omitempty"`
 	BDS2 int8   `json:"bds2,omitempty"`
 }
 
@@ -194,9 +194,9 @@ type ACASResolutionAdvisoryReport struct {
 	TYP  int8  `json:"typ,omitempty"`
 	STYP int8  `json:"styp,omitempty"`
 	ARA  int16 `json:"ara,omitempty"`
-	RAC  int16  `json:"rac,omitempty"`
-	RAT  int16  `json:"rat,omitempty"`
-	MTE  int16  `json:"mte,omitempty"`
+	RAC  int16 `json:"rac,omitempty"`
+	RAT  int16 `json:"rat,omitempty"`
+	MTE  int16 `json:"mte,omitempty"`
 	TTI  int8  `json:"tti,omitempty"`
 	TID  int32 `json:"tid,omitempty"`
 }
@@ -671,7 +671,7 @@ func trueAirSpeed(data [2]byte) TrueAirSpeed {
 
 func geometricHeight(data [2]byte) GeometricHeight {
 	tmpHeight := goasterix.TwoComplement16(16, uint16(data[0])<<BYTESIZE+uint16(data[1]))
-	
+
 	greaterThan := false
 	int16Max := int16(32767)
 	if tmpHeight == int16Max {
