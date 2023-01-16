@@ -1,8 +1,35 @@
 package transform
 
 import (
+	"reflect"
 	"testing"
+
+	"github.com/mokhtarimokhtar/goasterix"
 )
+
+func Test_TargetReportDescriptors(t *testing.T) {
+	// Arrange 
+	inputBytestream := []byte{0x2E}
+	input := goasterix.Compound{
+		Primary: inputBytestream,
+	}
+	output := TargetReportDescriptor{
+		ATP: "Duplicate address",
+		ARC: "100ft",
+		RC: "Range Check passed, CPR Validation pending",
+		RAB: "Report from field monitor (fixed transponder)",
+	}
+
+	// Act 
+	res := targetReportDescriptor(input)
+
+	// Assert
+	if reflect.DeepEqual(output, res) {
+		t.Errorf("FAIL: %v; Expected: %v", res, output)
+	} else {
+		t.Logf("SUCCESS: %v; Expected: %v", res, output)
+	}
+}
 
 func Test_wgs84Coordinates_LowPrecision(t *testing.T) {
 	// Arrange

@@ -254,7 +254,6 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			tmp, _ := sacSic(payload)
 			data.DataSourceIdentification = &tmp
 		case 2:
-			// TODO: Write unit tests
 			tmp := targetReportDescriptor(*item.Compound)
 			data.TargetReportDescriptor = &tmp
 		case 3:
