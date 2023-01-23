@@ -130,7 +130,7 @@ type VerticalRate struct {
 type AirborneGroundVector struct {
 	RE          string  `json:"re,omitempty"`
 	GroundSpeed float32 `json:"groundspeed,omitempty"`
-	TrackAngle  float32 `json:"trackangle,omitempty"`
+	TrackAngle  float32 `json:"trackangle,om itempty"`
 }
 
 type TrajectoryIntentData struct {
