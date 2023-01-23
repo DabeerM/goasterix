@@ -268,8 +268,7 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			copy(payload[:], item.Fixed.Data[:])
 			data.TimeOfApplicabilityForPosition, _ = timeOfDay(payload)
 		case 6:
-			var payload []byte
-			copy(payload[:], item.Fixed.Data[:])
+			payload := item.Fixed.Data
 			tmp := wgs84Coordinates(payload)
 			data.PositionWGS84 = &tmp
 		case 7:
