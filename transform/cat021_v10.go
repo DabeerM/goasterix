@@ -326,7 +326,8 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			tmp := qualityIndicators(*item.Extended)
 			data.QualityIndicators = &tmp
 		case 18:
-			tmp := mOPS(*item.Compound)
+			payload := item.Fixed.Payload()[0]
+			tmp := mOPS(payload)
 			data.MOPSVersion = &tmp
 		case 19:
 			var payload [2]byte
@@ -688,10 +689,10 @@ func geometricHeight(data [2]byte) GeometricHeight {
 	}
 }
 
-func mOPS(cp goasterix.Compound) MOPSVersion {
+func mOPS(cp byte) MOPSVersion {
 	mops := new(MOPSVersion)
 
-	tmp := cp.Primary[0]
+	tmp := cp
 
 	if tmp&0x40>>6 == 0 {
 		mops.VNS = "supported"
