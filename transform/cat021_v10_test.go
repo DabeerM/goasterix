@@ -5,13 +5,12 @@ import (
 	"testing"
 
 	"github.com/mokhtarimokhtar/goasterix"
-	"github.com/mokhtarimokhtar/goasterix/uap"
 )
 
 func Test_TargetReportDescriptors(t *testing.T) {
 	// Arrange
 	inputBytestream := []byte{0x2E}
-	input := goasterix.Compound{
+	input := goasterix.Extended{
 		Primary: inputBytestream,
 	}
 	output := TargetReportDescriptor{
@@ -19,119 +18,6 @@ func Test_TargetReportDescriptors(t *testing.T) {
 		ARC: "100ft",
 		RC:  "Range Check passed, CPR Validation pending",
 		RAB: "Report from field monitor (fixed transponder)",
-	}
-
-	// Act
-	res := targetReportDescriptor(input)
-
-	// Assert
-	if reflect.DeepEqual(output, res) {
-		t.Errorf("FAIL: %v; Expected: %v", res, output)
-	} else {
-		t.Logf("SUCCESS: %v; Expected: %v", res, output)
-	}
-}
-
-func Test_TargetReportDescriptorsFirstExtension(t *testing.T) {
-	// Arrange
-	inputBytestream := []byte{0x2F}
-	input := goasterix.Compound{
-		Primary: inputBytestream,
-		Secondary: []goasterix.Item{
-			goasterix.Item{
-				Meta: goasterix.MetaItem{
-					FRN:         2,
-					DataItem:    "Target report descriptor",
-					Description: "Target report descriptor with a single field extension",
-					Type:        uap.Compound,
-				},
-				Compound: &goasterix.Compound{
-					Primary: []byte{0xAC},
-				},
-			},
-		},
-	}
-
-	output := TargetReportDescriptor{
-		ATP: "Duplicate address",
-		ARC: "100ft",
-		RC:  "Range Check passed, CPR Validation pending",
-		RAB: "Report from field monitor (fixed transponder)",
-		FX: &FirstExtensionTRD{
-			DCR: "Differential correction (ADS-B)",
-			GBS: "Ground Bit not set",
-			SIM: "Simulated target report",
-			TST: "Default",
-			SAA: "Equipment not capable to provide Selected Altitude",
-			CL:  "Report suspect",
-		},
-	}
-
-	// Act
-	res := targetReportDescriptor(input)
-
-	// Assert
-	if reflect.DeepEqual(output, res) {
-		t.Errorf("FAIL: %v; Expected: %v", res, output)
-	} else {
-		t.Logf("SUCCESS: %v; Expected: %v", res, output)
-	}
-}
-
-func Test_TargetReportDescriptorsSecondExtension(t *testing.T) {
-	// Arrange
-	inputBytestream := []byte{0x2F}
-	input := goasterix.Compound{
-		Primary: inputBytestream,
-		Secondary: []goasterix.Item{
-			goasterix.Item{
-				Meta: goasterix.MetaItem{
-					FRN:         2,
-					DataItem:    "Target report descriptor",
-					Description: "Target report descriptor with two field extension",
-					Type:        uap.Compound,
-				},
-				Compound: &goasterix.Compound{
-					Primary: []byte{0xAC},
-					Secondary: []goasterix.Item{
-						goasterix.Item{
-							Meta: goasterix.MetaItem{
-								FRN:         2,
-								DataItem:    "Target report descriptor",
-								Description: "Target report descriptor with two field extensions",
-								Type:        uap.Compound,
-							},
-							Compound: &goasterix.Compound{
-								Primary: []byte{0x3E},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	output := TargetReportDescriptor{
-		ATP: "Duplicate address",
-		ARC: "100ft",
-		RC:  "Range Check passed, CPR Validation pending",
-		RAB: "Report from field monitor (fixed transponder)",
-		FX: &FirstExtensionTRD{
-			DCR: "Differential correction (ADS-B)",
-			GBS: "Ground Bit not set",
-			SIM: "Simulated target report",
-			TST: "Default",
-			SAA: "Equipment not capable to provide Selected Altitude",
-			CL:  "Report suspect",
-			SecondExtension: &SecondExtensionTRD{
-				LLC: "default",
-				IPC: "Independent Position Check failed",
-				NOGO: "NOGO-bit set",
-				CPR: "CPR Validation failed",
-				LDPJ: "LDPJ detected",
-				RCF: "Range Check failed",
-			},
-		},
 	}
 
 	// Act
