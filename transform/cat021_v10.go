@@ -2,6 +2,7 @@ package transform
 
 import (
 	"encoding/hex"
+	"fmt"
 	"math"
 	"strings"
 
@@ -247,6 +248,7 @@ type Cat021Model struct {
 
 func (data *Cat021Model) write(rec goasterix.Record) {
 	for _, item := range rec.Items {
+		fmt.Printf("FRN: %d\n\n", item.Meta.FRN)
 		switch item.Meta.FRN {
 		case 1:
 			var payload [2]byte
@@ -254,7 +256,8 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			tmp, _ := sacSic(payload)
 			data.DataSourceIdentification = &tmp
 		case 2:
-			tmp := targetReportDescriptor(*item.Compound)
+			cmp := *item.Extended
+			tmp := targetReportDescriptor(cmp)
 			data.TargetReportDescriptor = &tmp
 		case 3:
 			var payload [2]byte
@@ -268,12 +271,14 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			copy(payload[:], item.Fixed.Data[:])
 			data.TimeOfApplicabilityForPosition, _ = timeOfDay(payload)
 		case 6:
-			payload := item.Fixed.Data
+			fmt.Printf("BYTES RECEIVED: %v\n", item.Fixed.Data)
+			payload := FlipEndianness(item.Fixed.Data)
 			tmp := wgs84Coordinates(payload)
 			data.PositionWGS84 = &tmp
 		case 7:
-			var payload []byte
-			copy(payload[:], item.Fixed.Data[:])
+			//var payload []byte
+			//copy(payload[:], item.Fixed.Data[:])
+			payload := item.Fixed.Data[:]
 			tmp := wgs84Coordinates(payload)
 			data.PositionWGS84HighRes = &tmp
 		case 8:
@@ -318,7 +323,7 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			tmp := geometricHeight(payload)
 			data.GeometricHeight = &tmp
 		case 17:
-			tmp := qualityIndicators(*item.Compound)
+			tmp := qualityIndicators(*item.Extended)
 			data.QualityIndicators = &tmp
 		case 18:
 			tmp := mOPS(*item.Compound)
@@ -341,8 +346,7 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 		case 22:
 			data.MagneticHeading = float64(uint16(item.Fixed.Data[0])<<8+uint16(item.Fixed.Data[1])) * 0.0055
 		case 23:
-			var payload []byte
-			copy(payload, item.Fixed.Data[:])
+			payload := item.Fixed.Data[:]
 			tmp := targetStatus(payload)
 			data.TargetStatus = tmp
 		case 24:
@@ -395,14 +399,16 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			copy(payload[:], item.Fixed.Data[:])
 			data.AircraftOperationStatus = aircraftOperationalStatus(payload)
 		case 37:
-			var payload []byte
-			copy(payload[:], item.Fixed.Data[:])
+			//var payload []byte
+			//copy(payload[:], item.Fixed.Data[:])
+			payload := item.Fixed.Data[:]
 			data.SurfaceCapabilitiesAndCharacteristic = surfaceCapabilitiesAndCharacteristics(payload)
 		case 38:
 			data.MessageAmplitude = goasterix.TwoComplement16(8, uint16(item.Fixed.Data[0]))
 		case 39:
-			var payload []byte
-			copy(payload[:], item.Repetitive.Payload()[:])
+			//var payload []byte
+			//copy(payload[:], item.Repetitive.Payload()[:])
+			payload := item.Fixed.Data[:]
 			tmp := modeSMBDataCAT021(payload)
 			data.ModeSMBData = tmp
 		case 40:
@@ -420,7 +426,7 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 
 // TODO: Refactor to cover for arbitrary number of extensions (currently only covers
 //       two as that's explicitly in the spec)
-func targetReportDescriptor(cp goasterix.Compound) TargetReportDescriptor {
+func targetReportDescriptor(cp goasterix.Extended) TargetReportDescriptor {
 	trd := new(TargetReportDescriptor)
 
 	tmpList := cp.Payload()
@@ -562,7 +568,7 @@ func targetReportDescriptor(cp goasterix.Compound) TargetReportDescriptor {
 	return *trd
 }
 
-func qualityIndicators(cp goasterix.Compound) QualityIndicators {
+func qualityIndicators(cp goasterix.Extended) QualityIndicators {
 	qi := new(QualityIndicators)
 
 	tmp := cp.Primary[0]
@@ -575,8 +581,7 @@ func qualityIndicators(cp goasterix.Compound) QualityIndicators {
 		fx1 := new(FirstExtensionQI)
 
 		fstItem := 0
-		fstByte := 0
-		tmp = cp.Secondary[fstItem].Payload()[fstByte]
+		tmp = cp.Secondary[fstItem]
 
 		fx1.NICBaro = int(tmp & 0x80 >> (BYTESIZE - 1))
 
@@ -587,7 +592,7 @@ func qualityIndicators(cp goasterix.Compound) QualityIndicators {
 		if isFieldExtention(tmp) {
 			fx2 := new(SecondExtensionQI)
 			sndItem := 1
-			tmp = cp.Secondary[sndItem].Payload()[fstByte]
+			tmp = cp.Secondary[sndItem]
 
 			if tmp&0x20 == 0 {
 				fx2.SILS = "flight-hour"
@@ -602,7 +607,7 @@ func qualityIndicators(cp goasterix.Compound) QualityIndicators {
 			if isFieldExtention(tmp) {
 				fx3 := new(ThirdExtensionQI)
 				thirdItem := 2
-				tmp = cp.Secondary[thirdItem].Payload()[fstByte]
+				tmp = cp.Secondary[thirdItem]
 
 				fx3.PIC = getPIC(int(tmp & 0xF0 >> 4))
 
@@ -1204,4 +1209,13 @@ func getPIC(data int) *PIC {
 	tmpPIC.NIC_Version2OrHigher = tmpNICV2
 
 	return tmpPIC
+}
+
+func FlipEndianness(bytes []byte) []byte {
+	for i := 0; i < len(bytes)/2; i++ {
+		tmp := bytes[i]
+		bytes[i] = bytes[len(bytes)-i-1]
+		bytes[len(bytes)-i-1] = tmp
+	}
+	return bytes
 }
