@@ -237,7 +237,7 @@ type Cat021Model struct {
 	TrackAngleRate                                 float32                                `json:"TrackAngleRate,omitempty"`
 	TargetIdentification                           string                                 `json:"TargetIdentification,omitempty"`
 	TargetStatus                                   *TargetStatus                          `json:"TargetStatus,omitempty"`
-	MOPSVersion                                    *MOPSVersion                           `json:"MPOSVersion,omitempty"`
+	MOPSVersion                                    *MOPSVersion                           `json:"MOPSVersion,omitempty"`
 	MetInformation                                 string                                 `json:"MetInformation,omitempty"`
 	RollAngle                                      float64                                `json:"RollAngle,omitempty"`
 	ModeSMBData                                    *ModeSMBData                           `json:"ModeSMBData,omitempty"`
