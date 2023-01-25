@@ -756,9 +756,9 @@ func targetStatus(data []byte) *TargetStatus {
 	}
 
 	if tmp&0x40 == 0 {
-		ts.LNAV = "engaged"
+		ts.LNAV = "LNAV Mode engaged"
 	} else {
-		ts.LNAV = "not engaged"
+		ts.LNAV = "LNAV Mode not engaged"
 	}
 
 	if tmp&0x20 == 0 {
@@ -773,7 +773,7 @@ func targetStatus(data []byte) *TargetStatus {
 	case 1:
 		ts.PS = "General emergency"
 	case 2:
-		ts.PS = "Lifeguard/medical emergency"
+		ts.PS = "Lifeguard / medical emergency"
 	case 3:
 		ts.PS = "Minimum fuel"
 	case 4:
