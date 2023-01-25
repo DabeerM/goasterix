@@ -130,7 +130,7 @@ type VerticalRate struct {
 
 type AirborneGroundVector struct {
 	RE          string  `json:"re,omitempty"`
-	GroundSpeed float32 `json:"groundspeed,omitempty"`
+	GroundSpeed float64 `json:"groundspeed,omitempty"`
 	TrackAngle  float64 `json:"trackangle,omitempty"`
 }
 
@@ -828,7 +828,7 @@ func airborneGroundVector(data [4]byte) *AirborneGroundVector {
 		agv.RE = "Value exceeds defined range"
 	}
 
-	agv.GroundSpeed = float32(int16(data[0])&0x7F<<BYTESIZE+int16(data[1])&0xFF) * float32(math.Pow(2, -14))
+	agv.GroundSpeed = float64(int16(data[0])&0x7F<<BYTESIZE+int16(data[1])&0xFF) * float64(math.Pow(2, -14))
 
 	tmpLSBTrackAngle := float64(360 / math.Pow(2, 16))
 	agv.TrackAngle = float64(uint16(data[2])&0xFF<<BYTESIZE+uint16(data[3])&0xFF) * tmpLSBTrackAngle
