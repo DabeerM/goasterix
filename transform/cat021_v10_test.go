@@ -33,12 +33,12 @@ func Test_TargetReportDescriptors(t *testing.T) {
 
 func Test_wgs84Coordinates_LowPrecision(t *testing.T) {
 	// Arrange
-	input := []byte{0x24, 0x0, 0x0, 0x07, 0x00, 0x00}
+	input := []byte{0x8a, 0x42, 0x02, 0x21, 0xff, 0x22}
 	output := WGS84Coordinates{
-		Latitude:  51.0,
-		Longitude: 10.0,
+		Latitude:  49.2139649391174,
+		Longitude: 3.17801166325808,
 	}
-	epsilon := 1.0
+	epsilon := 0.1
 
 	// Act
 	res := wgs84Coordinates(input)
@@ -53,12 +53,12 @@ func Test_wgs84Coordinates_LowPrecision(t *testing.T) {
 
 func Test_wgs84Coordinates_HighPrecision(t *testing.T) {
 	// Arrange
-	input := []byte{0x24, 0x00, 0x0, 0x0, 0x07, 0x00, 0x00, 0x0}
+	input := []byte{0x11, 0x7f, 0x90, 0x06, 0x01, 0x21, 0x45, 0x0a}
 	output := WGS84Coordinates{
-		Latitude:  51.0,
-		Longitude: 10.0,
+		Latitude:  49.2139444872737,
+		Longitude: 3.17801166325808,
 	}
-	epsilon := 1.0
+	epsilon := 0.1
 
 	// Act
 	res := wgs84Coordinates(input)

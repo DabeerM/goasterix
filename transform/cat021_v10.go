@@ -14,8 +14,8 @@ const (
 )
 
 type WGS84Coordinates struct {
-	Latitude  float32 `json:"latitude,omitempty"`
-	Longitude float32 `json:"longitude,omitempty"`
+	Latitude  float64 `json:"latitude,omitempty"`
+	Longitude float64 `json:"longitude,omitempty"`
 }
 
 type GeometricHeight struct {
@@ -400,15 +400,11 @@ func (data *Cat021Model) write(rec goasterix.Record) {
 			copy(payload[:], item.Fixed.Data[:])
 			data.AircraftOperationStatus = aircraftOperationalStatus(payload)
 		case 37:
-			//var payload []byte
-			//copy(payload[:], item.Fixed.Data[:])
 			payload := item.Fixed.Data[:]
 			data.SurfaceCapabilitiesAndCharacteristic = surfaceCapabilitiesAndCharacteristics(payload)
 		case 38:
 			data.MessageAmplitude = goasterix.TwoComplement16(8, uint16(item.Fixed.Data[0]))
 		case 39:
-			//var payload []byte
-			//copy(payload[:], item.Repetitive.Payload()[:])
 			payload := item.Fixed.Data[:]
 			tmp := modeSMBDataCAT021(payload)
 			data.ModeSMBData = tmp
@@ -633,17 +629,18 @@ func wgs84Coordinates(data []byte) WGS84Coordinates {
 	var pos WGS84Coordinates
 
 	if len(data) == 6 {
+		data = FlipEndianness(data) // Real world data seems to have its endianness flipped...
 		tmpLatitude := uint32(data[0])<<(2*BYTESIZE) + uint32(data[1])<<BYTESIZE + uint32(data[2])
-		pos.Latitude = float32(goasterix.TwoComplement32(24, tmpLatitude)) * 0.00002145767
+		pos.Latitude = float64(goasterix.TwoComplement32(24, tmpLatitude)) * 0.00002145767
 
 		tmpLongitude := uint32(data[3])<<(2*BYTESIZE) + uint32(data[4])<<BYTESIZE + uint32(data[5])
-		pos.Longitude = float32(goasterix.TwoComplement32(32, tmpLongitude)) * 0.00002145767
+		pos.Longitude = float64(goasterix.TwoComplement32(24, tmpLongitude)) * 0.00002145767
 	} else { // high precision data
-		tmpLatitude := uint32(data[0])<<23 + uint32(data[1])<<15 + uint32(data[2])<<7 + uint32(data[3])
-		pos.Latitude = float32(goasterix.TwoComplement32(32, tmpLatitude)) * 0.00000016764
+		tmpLatitude := uint32(data[0])<<(3*BYTESIZE) + uint32(data[1])<<(2*BYTESIZE) + uint32(data[2])<<BYTESIZE + uint32(data[3])
+		pos.Latitude = float64(goasterix.TwoComplement32(32, tmpLatitude)) * 0.00000016764
 
-		tmpLongitude := uint32(data[4])<<23 + uint32(data[5])<<15 + uint32(data[6])<<7 + uint32(data[7])
-		pos.Longitude = float32(goasterix.TwoComplement32(32, tmpLongitude)) * 0.00000016764
+		tmpLongitude := uint32(data[4])<<(3*BYTESIZE) + uint32(data[5])<<(2*BYTESIZE) + uint32(data[6])<<BYTESIZE + uint32(data[7])
+		pos.Longitude = float64(goasterix.TwoComplement32(32, tmpLongitude)) * 0.00000016764
 	}
 
 	return pos
@@ -811,7 +808,7 @@ func rollAngle(data [2]byte) float64 {
 func verticalRate(data [2]byte) *VerticalRate {
 	baroRate := new(VerticalRate)
 
-	if int16(data[0])&0xF0>>BYTESIZE-1 == 0 {
+	if int16(data[0])&0x80>>(BYTESIZE-1) == 0 {
 		baroRate.RE = "Value in defined range"
 	} else {
 		baroRate.RE = "Value exceeds defined range "
@@ -995,7 +992,7 @@ func aircraftOperationalStatus(data [1]byte) *AircraftOperationStatus {
 		tmpAOS.RA = "TCAS RA active"
 	}
 
-	switch uint16(tmp&0x60)>>BYTESIZE - 3 {
+	switch uint16(tmp&0x60) >> (BYTESIZE - 3) {
 	case 0:
 		tmpAOS.TC = "no capability for Trajectory Change Reports"
 	case 1:
@@ -1006,25 +1003,25 @@ func aircraftOperationalStatus(data [1]byte) *AircraftOperationStatus {
 		tmpAOS.TC = "reserved"
 	}
 
-	if uint16(tmp&0x10)>>BYTESIZE-4 == 0 {
+	if uint16(tmp&0x10)>>(BYTESIZE-4) == 0 {
 		tmpAOS.TS = "no capability to support Target State Reports"
 	} else {
 		tmpAOS.TS = "capable of supporting target State Reports"
 	}
 
-	if uint16(tmp&0x08)>>BYTESIZE-3 == 0 {
+	if uint16(tmp&0x08)>>(BYTESIZE-5) == 0 {
 		tmpAOS.ARV = "no capability to generate ARV-reports"
 	} else {
 		tmpAOS.ARV = "capable of generate ARV-reports"
 	}
 
-	if uint16(tmp&0x04)>>BYTESIZE-2 == 0 {
+	if uint16(tmp&0x04)>>(BYTESIZE-6) == 0 {
 		tmpAOS.CDTIA = "CDTI not operational"
 	} else {
 		tmpAOS.CDTIA = "CDTI operational"
 	}
 
-	if uint16(tmp&0x02)>>BYTESIZE-1 == 0 {
+	if uint16(tmp&0x02)>>(BYTESIZE-7) == 0 {
 		tmpAOS.NotTCAS = "TCAS operational"
 	} else {
 		tmpAOS.NotTCAS = "TCAS not operational"
